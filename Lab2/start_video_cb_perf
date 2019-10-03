@@ -1,0 +1,5 @@
+#!/bin/bash
+
+python /home/pi/Documents/ECE-5725-Labs/Lab2/more_video_control_cb_perf.py &
+
+sudo SDL_VIDEODRIVER=fbcon SDL_FBDEV=/dev/fb1 mplayer -vo sdl -framedrop -input file=/home/pi/Documents/ECE-5725-Labs/Lab2/video_fifo /home/pi/Documents/ECE-5725-Labs/Lab2/bigbuckbunny320p.mp4 
