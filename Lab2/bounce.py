@@ -7,13 +7,14 @@ import pygame
 os.putenv('SDL_VIDEODRIVER', 'fbcon')
 os.putenv('SDL_FBDEV', '/dev/fb1')
 
-
+playing = True
 
 GPIO.setmode(GPIO.BCM)   # Set for broadcom numbering not board numbers...
 GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_UP) # Pin 27 - quit
 
 def GPIO27_callback(channel):
-    print "falling edge detected on 27"
+    global playing
+    playing = False
     
 GPIO.add_event_detect(27, GPIO.FALLING, callback=GPIO27_callback, bouncetime=200)
 
@@ -54,33 +55,40 @@ image = pygame.image.load(path_to_image)
 
 
 try:
-	# -------- Main Program Loop -----------
-	while True:
-		# Set the screen background
-		screen.fill(GREEN)
-		
-		# Draw the ball
-		screen.blit(image, (surf_x, surf_y))
-		
-		# update the screen
-		pygame.display.flip()
+    # -------- Main Program Loop -----------
+    while playing:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                playing = False
+                break
+            
+        # Set the screen background
+        screen.fill(GREEN)
+        
+        # Draw the ball
+        screen.blit(image, (surf_x, surf_y))
+        
+        # update the screen
+        pygame.display.flip()
  
-		# Limit to 30 frames per second
-		clock.tick(60)
-		
-		
-		# Move the rectangle starting point
-		if (surf_x + 128 > width) or (surf_x < 0):
-			delta_x = -1*delta_x
-		if (surf_y + 128 > height) or (surf_y < 0):
-			delta_y = -1*delta_y
-	
-		surf_x += delta_x
-		surf_y += delta_y
-		
+        # Limit to 30 frames per second
+        clock.tick(60)
+        
+        
+        # Move the rectangle starting point
+        if (surf_x + 128 > width) or (surf_x < 0):
+            delta_x = -1*delta_x
+        if (surf_y + 128 > height) or (surf_y < 0):
+            delta_y = -1*delta_y
+    
+        surf_x += delta_x
+        surf_y += delta_y
+        
        
 except KeyboardInterrupt:
     GPIO.cleanup() # clean up GPIO on CTRL+C exit
+    pygame.quit()
 
 GPIO.cleanup() # clean up GPIO on normal exit
+pygame.quit()
 
