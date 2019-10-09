@@ -15,7 +15,6 @@ def vector_sub(v1, v2):
 
 def vector_dot(v1, v2):
     assert(len(v1) == 2 & len(v2) == 2)
-    # a · b = ax × bx + ay × by
     return v1[0]*v2[0] + v1[1]*v2[1]
 
 def vector_mag_sq(v):
