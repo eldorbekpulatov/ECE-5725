@@ -3,7 +3,9 @@ import subprocess
 import time
 import os
 import pygame
- 
+
+start = time.time()
+
 os.putenv('SDL_VIDEODRIVER', 'fbcon')
 os.putenv('SDL_FBDEV', '/dev/fb1')
 
@@ -56,7 +58,7 @@ image = pygame.image.load(path_to_image)
 
 try:
     # -------- Main Program Loop -----------
-    while playing:
+    while (playing and (time.time() - start < 30)):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 playing = False

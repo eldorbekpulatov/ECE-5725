@@ -6,6 +6,8 @@ import subprocess
 from pygame.locals import * 
 import RPi.GPIO as GPIO
 
+start = time.time()
+
 os.putenv('SDL_VIDEODRIVER', 'fbcon')   # Display on piTFT
 os.putenv('SDL_FBDEV', '/dev/fb1')     
 os.putenv('SDL_MOUSEDRV', 'TSLIB')     # Track mouse clicks on piTFT
@@ -87,7 +89,7 @@ try:
         ball["img"] = pygame.transform.scale(img, ball["dim"])
     
     # ------main loop-------
-    while playing:
+    while (playing and (time.time() - start < 30)):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 playing = False

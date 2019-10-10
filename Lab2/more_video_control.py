@@ -2,6 +2,9 @@ import RPi.GPIO as GPIO
 import time
 import os
 
+os.putenv('SDL_VIDEODRIVER', 'fbcon')
+os.putenv('SDL_FBDEV', '/dev/fb1')
+
 GPIO.setmode(GPIO.BCM)   # Set for broadcom numbering not board numbers...
 
 # Pin 17 - pause
