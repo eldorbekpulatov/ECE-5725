@@ -7,10 +7,10 @@ from pygame.locals import *
 from utils import *
 import RPi.GPIO as GPIO
 
-#os.putenv('SDL_VIDEODRIVER', 'fbcon')   # Display on piTFT
-#os.putenv('SDL_FBDEV', '/dev/fb1')     
-#os.putenv('SDL_MOUSEDRV', 'TSLIB')     # Track mouse clicks on piTFT
-#os.putenv('SDL_MOUSEDEV', '/dev/input/touchscreen')
+os.putenv('SDL_VIDEODRIVER', 'fbcon')   # Display on piTFT
+os.putenv('SDL_FBDEV', '/dev/fb1')     
+os.putenv('SDL_MOUSEDRV', 'TSLIB')     # Track mouse clicks on piTFT
+os.putenv('SDL_MOUSEDEV', '/dev/input/touchscreen')
 
 # variable used to break out of the loop
 playing = True  

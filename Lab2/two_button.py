@@ -52,6 +52,11 @@ buttons= { "quit": (80, 220), "start": (220, 220) }
 # Used to manage how fast the screen updates
 clock = pygame.time.Clock()
 
+# Controls coordinate messages
+coord= ""
+coord_time = time.time() - 2
+coord_pos = (160, 200)
+
 # ball parameters
 balls = [
     {
@@ -96,29 +101,32 @@ def calculate(balls):
         
 try: 
     # Set the screen background
-    screen.fill(BLACK)
-    for text, pos in buttons.items():
-        text_surface= font.render(text, True, WHITE)
-        rect = text_surface.get_rect(center=pos)
-        screen.blit(text_surface, rect)
-    pygame.display.flip()
+#    screen.fill(BLACK)
+#    for text, pos in buttons.items():
+#        text_surface= font.render(text, True, WHITE)
+#        rect = text_surface.get_rect(center=pos)
+#        screen.blit(text_surface, rect)
+#    pygame.display.flip()
         
     # ------main loop-------
     while playing:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                animating = False
                 playing = False
                 break
             elif(event.type is MOUSEBUTTONUP):
                 x,y = pygame.mouse.get_pos()
-                print("x = " + str(x) + ", y = "+ str(y))
                 
                 if (y > 200) and (x > 50 and x < 110):
+                    animating = False
                     playing = False
                     break
                 elif (y > 200) and (x > 190 and x < 250):
-                    # TODO: start the animation
                     animating = True
+                else:
+                    coord = "x = " + str(x) + ", y = "+ str(y)
+                    coord_time = time.time()
         if animating:
              # load and scale the balls
             for ball in balls:
@@ -134,12 +142,31 @@ try:
             # draw the balls
             for ball in balls:
                 screen.blit(ball["img"], ball["pos"])
-
-            # update the screen
-            pygame.display.flip()
+            
+            for text, pos in buttons.items():
+                text_surface= font.render(text, True, WHITE)
+                rect = text_surface.get_rect(center=pos)
+                screen.blit(text_surface, rect)
      
-            # Limit frames per second
-            clock.tick(80)
+        else:
+            # Not animating
+            screen.fill(BLACK)
+            for text, pos in buttons.items():
+                text_surface= font.render(text, True, WHITE)
+                rect = text_surface.get_rect(center=pos)
+                screen.blit(text_surface, rect)
+                
+        if time.time() - coord_time < 2:
+            text_surface= font.render(coord, True, RED)
+            rect = text_surface.get_rect(center=coord_pos)
+            screen.blit(text_surface, rect)
+
+
+        # update the screen
+        pygame.display.flip()
+ 
+        # Limit frames per second
+        clock.tick(80)
 
        
 except KeyboardInterrupt:
