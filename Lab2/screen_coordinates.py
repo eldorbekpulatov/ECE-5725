@@ -26,7 +26,7 @@ GPIO.add_event_detect(27, GPIO.FALLING, callback=GPIO27_callback, bouncetime=200
 pygame.init()
 
 #make mouse invisible
-pygame.mouse.set_visible(False)
+#pygame.mouse.set_visible(False)
 
 
 # Define some colors
@@ -40,13 +40,13 @@ size = width, height = (320, 240)
 screen = pygame.display.set_mode(size)
 
 # window title 
-pygame.display.set_caption("quit_button")
+pygame.display.set_caption("screen_coordinates")
 
 # Font and size
-font = pygame.font.Font(None, 50)
+font = pygame.font.Font(None, 30)
 
 # list of buttons : positions
-buttons= { "quit": (80,180) }
+buttons= { "quit": (80, 220), "start": (220, 220) }
  
 
 try: 
@@ -65,8 +65,10 @@ try:
                 playing = False
                 break
             elif(event.type is MOUSEBUTTONUP):
-                x,y = pygame.mouse.get_pos() 
-                if (y < 160) and (x < 100):
+                x,y = pygame.mouse.get_pos()
+                print("x = " + str(x) + ", y = "+ str(y))
+                
+                if (y > 200) and (x > 50 and x < 110):
                     playing = False
                     break
                 else:
@@ -76,8 +78,8 @@ try:
                         rect = text_surface.get_rect(center=pos)
                         screen.blit(text_surface, rect)
                     
-                    text_surface= font.render("Hit at %d , %d".format(x,y), True, WHITE)
-                    rect = text_surface.get_rect(center=(100,200))
+                    text_surface= font.render("Hit at ({}, {})".format(x,y), True, WHITE)
+                    rect = text_surface.get_rect(center=(160,110))
                     screen.blit(text_surface, rect)
                     
                     pygame.display.flip()
