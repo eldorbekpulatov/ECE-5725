@@ -57,6 +57,9 @@ try:
         rect = text_surface.get_rect(center=pos)
         screen.blit(text_surface, rect)
     pygame.display.flip()
+
+    # Open the file to store coordinate clicks
+    click_file = open("Click_Coords.txt","w+")
         
     # ------main loop-------
     while playing:
@@ -66,7 +69,9 @@ try:
                 break
             elif(event.type is MOUSEBUTTONUP):
                 x,y = pygame.mouse.get_pos()
-                print("x = " + str(x) + ", y = "+ str(y))
+                coord_str = "x = " + str(x) + ", y = "+ str(y) + "\n"
+                print(coord_str)
+                click_file.write(coord_str)
                 
                 if (y > 200) and (x > 50 and x < 110):
                     playing = False
@@ -85,11 +90,13 @@ try:
                     pygame.display.flip()
        
 except KeyboardInterrupt:
-    # clean up GPIO and quit pygame on CTRL+C exit 
+    # clean up GPIO, close txt file, and quit pygame on CTRL+C exit 
+    click_file.close()
     GPIO.cleanup() 
     pygame.quit()
 
-# clean up GPIO and quit pygame on normal exit
+# clean up GPIO, close txt file, and quit pygame on normal exit
+click_file.close()
 GPIO.cleanup() 
 pygame.quit()
 
