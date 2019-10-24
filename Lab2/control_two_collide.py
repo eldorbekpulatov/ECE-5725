@@ -27,7 +27,7 @@ GPIO.add_event_detect(27, GPIO.FALLING, callback=GPIO27_callback, bouncetime=200
 pygame.init()
 
 #make mouse invisible
-#pygame.mouse.set_visible(False)
+pygame.mouse.set_visible(False)
 
 
 # Define some colors

@@ -4,11 +4,10 @@ import time               # Import time library
 
 def calculateFreqDC(step):
     w = (1.5 + step)
-    print(w)
     d = (20+w)
     return (1000/d, w/d*100)
 
-def setMode(step):
+def setMode(step,pwm):
     (fq, dc) = calculateFreqDC(step)    
     pwm.ChangeDutyCycle(dc)      
     pwm.ChangeFrequency(fq)
@@ -31,12 +30,12 @@ try:
     # speed up Clockwise
     for step in range(0, 21, 2):
         step = step/100.0
-        setMode(step)
+        setMode(step,pwm)
 
     #speed up ounter-clockwise
     for step in range(0, -21, -2):
         step = step/100.0
-        setMode(step)
+        setMode(step,pwm)
 
     pwm.stop()                      # stop PWM
     
