@@ -1,0 +1,7 @@
+#!/bin/bash
+
+for x in {1..25}
+do
+	~/Documents/ECE-5725-Labs/Lab4/c_tests/sort_v1 &
+done
+
