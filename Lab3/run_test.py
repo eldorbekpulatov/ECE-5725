@@ -7,10 +7,10 @@ from pygame.locals import *
 import RPi.GPIO as GPIO
 from collections import deque
 
-os.putenv('SDL_VIDEODRIVER', 'fbcon')   # Display on piTFT
-os.putenv('SDL_FBDEV', '/dev/fb1')     
-os.putenv('SDL_MOUSEDRV', 'TSLIB')     # Track mouse clicks on piTFT
-os.putenv('SDL_MOUSEDEV', '/dev/input/touchscreen')
+#os.putenv('SDL_VIDEODRIVER', 'fbcon')   # Display on piTFT
+#os.putenv('SDL_FBDEV', '/dev/fb1')     
+#os.putenv('SDL_MOUSEDRV', 'TSLIB')     # Track mouse clicks on piTFT
+#os.putenv('SDL_MOUSEDEV', '/dev/input/touchscreen')
 
 #make mouse invisible
 #pygame.mouse.set_visible(False)
@@ -168,48 +168,66 @@ def update_screen():
     draw_quit_button()
     pygame.display.flip()
     
-def GPIO21_callback(channel):
-    print("falling edge detected on 21")
+def left_forward():
+    speed = 0.2
+    update_hist(l_hist, speed)
+    update_screen()
+    setMode(speed, pwmL)
+    
+def right_forward():
+    speed = -0.2
+    update_hist(r_hist, speed)
+    update_screen()
+    setMode(speed, pwmR)
+    
+def left_back():
     speed = -0.2
     update_hist(l_hist, speed)
     update_screen()
     setMode(speed, pwmL)
+    
+def right_back():
+    speed = 0.2
+    update_hist(r_hist, speed)
+    update_screen()
+    setMode(speed, pwmR)
+    
+def left_stop():
+    speed = 0
+    update_hist(l_hist, speed)
+    update_screen()
+    setMode(speed, pwmL)
+    
+def right_stop():
+    speed = 0
+    update_hist(r_hist, speed)
+    update_screen()
+    setMode(speed, pwmR)
+    
+def GPIO21_callback(channel):
+    print("falling edge detected on 21")
+    left_back()
     
 
 def GPIO16_callback(channel):
     print("falling edge detected on 16")
-    speed = 0
-    update_hist(l_hist, speed)
-    update_screen()
-    setMode(speed, pwmL)
+    left_stop()
     
 def GPIO12_callback(channel):
     print("falling edge detected on 12")
-    speed = 0.2
-    update_hist(l_hist, speed)
-    update_screen()
-    setMode(speed, pwmL)
+    left_forward()
     
 def GPIO20_callback(channel):
     print("falling edge detected on 20")
-    speed = -0.2
-    update_hist(r_hist, speed)
-    update_screen()
-    setMode(speed, pwmR)
+    right_forward()
 
 def GPIO5_callback(channel):
     print("falling edge detected on 5")
-    speed = 0
-    update_hist(r_hist, speed)
-    update_screen()
-    setMode(speed, pwmR)
+    right_stop()
     
 def GPIO4_callback(channel):
     print("falling edge detected on 4")
-    speed = 0.2
-    update_hist(r_hist, speed)
-    update_screen()
-    setMode(speed, pwmR)
+    right_back()
 
 GPIO.add_event_detect(21, GPIO.FALLING, callback=GPIO21_callback, bouncetime=200)
 GPIO.add_event_detect(16, GPIO.FALLING, callback=GPIO16_callback, bouncetime=200)
@@ -218,6 +236,72 @@ GPIO.add_event_detect(12, GPIO.FALLING, callback=GPIO12_callback, bouncetime=200
 GPIO.add_event_detect(20, GPIO.FALLING, callback=GPIO20_callback, bouncetime=200)
 GPIO.add_event_detect(5, GPIO.FALLING, callback=GPIO5_callback, bouncetime=200)
 GPIO.add_event_detect(4, GPIO.FALLING, callback=GPIO4_callback, bouncetime=200)
+
+state = "forward"
+next_state = "forward"
+prev_state = "stop"
+state_time = time.time()
+
+def update_state():
+    global state, next_state, prev_state, state_time
+    if state == "forward":
+        if time.time() - state_time >= 1.:
+            next_state = "stop"
+            prev_state = "forward"
+            left_stop()
+            right_stop()
+            state_time = time.time()
+        else:
+            next_state = "forward"
+    elif state == "back":
+        if time.time() - state_time >= 1.:
+            next_state = "stop"
+            prev_state = "back"
+            left_stop()
+            right_stop()
+            state_time = time.time()
+        else:
+            next_state = "back"
+    elif state == "l_pivot":
+        if time.time() - state_time >= 1:
+            next_state = "stop"
+            prev_state = "l_pivot"
+            left_stop()
+            right_stop()
+            state_time = time.time()
+        else:
+            next_state = "l_pivot"
+    elif state == "r_pivot":
+        if time.time() - state_time >= 1:
+            next_state = "stop"
+            prev_state = "r_pivot"
+            left_stop()
+            right_stop()
+            state_time = time.time()
+        else:
+            next_state = "r_pivot"
+    elif state == "stop":
+        if time.time() - state_time >= 0.5:
+            if prev_state == "forward":
+                next_state = "back"
+                left_back()
+                right_back()
+            elif prev_state == "back":
+                next_state = "l_pivot"
+                left_back()
+                right_forward()
+            elif prev_state == "l_pivot":
+                next_state = "r_pivot"
+                left_forward()
+                right_back()
+            elif prev_state == "r_pivot":
+                next_state = "forward"
+                left_forward()
+                right_forward()
+            prev_state = "stop"
+            state_time = time.time()
+        else:
+            next_state = "stop"
 
 try: 
     
@@ -253,12 +337,23 @@ try:
                 elif y > 200 and x < 300 and x > 260:
                     # Quit button
                     running = False
+        
+        if motor_en:
+            # Only update state if not paused
+            update_state()
+            state = next_state
+            print(state)
+       
        
         # Limit frames per second
         clock.tick(frame_rate)
+        
+        
+        
        
-except:
-    # turn off pwm, clean up GPIO, and quit pygame on CTRL+C exit 
+except Exception as e:
+    # turn off pwm, clean up GPIO, and quit pygame on CTRL+C exit
+    print(e)
     pass
 
 # turn off pwm, clean up GPIO, and quit pygame on normal exit
@@ -266,3 +361,4 @@ pwmL.stop()
 pwmR.stop()
 GPIO.cleanup() 
 pygame.quit()
+

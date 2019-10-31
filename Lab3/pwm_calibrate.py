@@ -6,7 +6,7 @@ GPIO.setmode(GPIO.BCM)    # Set Pi to use pin number when referencing GPIO pins.
                           # Can use GPIO.setmode(GPIO.BCM) instead to use 
                           # Broadcom SOC channel names.
 
-pwmPin = 26                     # set pin number
+pwmPin = 19                     # set pin number
 fq = 1000/21.5                  # set te frequency
 dc = 150/21.5                   # set the duty cycle
 
