@@ -20,7 +20,7 @@ int main()
 {
 
 // Generate data
-     const unsigned arraySize = 65536;
+     const unsigned arraySize = 655;
     int data[arraySize];
 
     for (unsigned c = 0; c < arraySize; ++c) {
