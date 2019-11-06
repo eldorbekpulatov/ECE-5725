@@ -3,6 +3,12 @@ import time               # Import time library
 
 
 def calculateFreqDC(step):
+    """
+    Returns the (frequency, dutyCycle) as tuple given a step.
+    
+    Param: step (float) bounded by -0.2 <= step <= +0.2
+    Return: (freq, dutyCycle) tuple of floats
+    """
     w = (1.5 + step)
     d = (20+w)
     return (1000/d, w/d*100)
