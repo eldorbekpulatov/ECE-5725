@@ -20,7 +20,7 @@ int main()
 {
 
 // Generate data
-     const unsigned arraySize = 655;
+     const unsigned arraySize = 655566;
     int data[arraySize];
 
     for (unsigned c = 0; c < arraySize; ++c) {
@@ -28,7 +28,7 @@ int main()
         data[c] = rand() % 256;
     }
     // sort the array in numerical order 
-    //  qsort(data, sizeof(data)/sizeof(*data), sizeof(*data), comp);
+    //qsort(data, sizeof(data)/sizeof(*data), sizeof(*data), comp);
     printf ("size of data = %d, size of *data = %d\n", sizeof(data), sizeof(*data) );
     // 
     clock_t start = clock();  // start a timer

@@ -72,14 +72,16 @@ int main(int argc, char* argv[])
         /* Pre-fault our stack */
         stack_prefault();
 
-         while(1) { // run forever ...
-//        while( current_sec < 5 ) {   // run the loop for 5 sec
 
-               for ( i=0 ; i<interval ; ++i ) {  /// use delay loop to control frequency
-               }
 
-               //  code to control GPIO goes here....
+        while(1) { // run forever ...
+                // use delay loop to control frequency
+                for ( i=0 ; i<interval ; ++i ) {};  
 
-   }
+                //  code to control GPIO goes here....
+                digitalWrite (23,  PinValue);
+                PinValue = !PinValue;
+
+        }
 }
 
