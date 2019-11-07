@@ -17,7 +17,7 @@ def setMode(step,pwm):
     (fq, dc) = calculateFreqDC(step)    
     pwm.ChangeDutyCycle(dc)      
     pwm.ChangeFrequency(fq)
-    time.sleep(3)
+    
  
 GPIO.setmode(GPIO.BCM)    # Set Pi to use pin number when referencing GPIO pins.
                           # Can use GPIO.setmode(GPIO.BCM) instead to use 
@@ -37,11 +37,13 @@ try:
     for step in range(0, 21, 2):
         step = step/100.0
         setMode(step,pwm)
+        time.sleep(3)
 
     #speed up ounter-clockwise
     for step in range(0, -21, -2):
         step = step/100.0
         setMode(step,pwm)
+        time.sleep(3)
 
     pwm.stop()                      # stop PWM
     
