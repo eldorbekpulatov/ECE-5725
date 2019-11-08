@@ -241,47 +241,52 @@ state = "forward"
 next_state = "forward"
 prev_state = "stop"
 state_time = time.time()
+trans_time = 1.
 
 def update_state():
-    global state, next_state, prev_state, state_time
+    global state, next_state, prev_state, state_time, trans_time
     if state == "forward":
-        if time.time() - state_time >= 1.:
+        if time.time() - state_time >= trans_time:
             next_state = "stop"
             prev_state = "forward"
             left_stop()
             right_stop()
             state_time = time.time()
+			trans_time = 0.5
         else:
             next_state = "forward"
     elif state == "back":
-        if time.time() - state_time >= 1.:
+        if time.time() - state_time >= trans_time:
             next_state = "stop"
             prev_state = "back"
             left_stop()
             right_stop()
             state_time = time.time()
+			trans_time = 0.5
         else:
             next_state = "back"
     elif state == "l_pivot":
-        if time.time() - state_time >= 1:
+        if time.time() - state_time >= trans_time:
             next_state = "stop"
             prev_state = "l_pivot"
             left_stop()
             right_stop()
             state_time = time.time()
+			trans_time = 0.5
         else:
             next_state = "l_pivot"
     elif state == "r_pivot":
-        if time.time() - state_time >= 1:
+        if time.time() - state_time >= trans_time:
             next_state = "stop"
             prev_state = "r_pivot"
             left_stop()
             right_stop()
             state_time = time.time()
+			trans_time = 0.5
         else:
             next_state = "r_pivot"
     elif state == "stop":
-        if time.time() - state_time >= 0.5:
+        if time.time() - state_time >= trans_time:
             if prev_state == "forward":
                 next_state = "back"
                 left_back()
@@ -300,6 +305,7 @@ def update_state():
                 right_forward()
             prev_state = "stop"
             state_time = time.time()
+			trans_time = 1.
         else:
             next_state = "stop"
 
@@ -326,10 +332,30 @@ try:
                         # Motors resuming
                         pwmL.start(dc)
                         pwmR.start(dc)
+						state_time = time.time() # State resume time
+						
+						# Rewrite motor directions based on state
+						if state == "forward":
+							left_forward()
+							right_forward()
+						elif state == "back":
+							left_back()
+							right_back()
+						elif state == "l_pivot":
+							left_back()
+							right_forward()
+						elif state == "r_pivot":
+							left_forward()
+							right_back()
+						elif state == "stop":
+							left_stop()
+							right_stop()
+						
                     else:
                         # Motors stopping
                         pwmL.stop()
                         pwmR.stop()
+						trans_time -= time.time() - state_time # Time left in state when resumed
                     
                     update_screen()
                     
