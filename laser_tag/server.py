@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.7
 import os
 import time
 import random
@@ -6,17 +6,17 @@ import socket
 import subprocess
 from constants import IPSTR, BUFFER_SIZE, KEY
 from multiprocessing import Process, Value, Array, Queue, Manager, Pool
-import copy_reg
-import types
-import multiprocessing
-
-def _pickle_method(m):
-    if m.im_self is None:
-        return getattr, (m.im_class, m.im_func.func_name)
-    else:
-        return getattr, (m.im_self, m.im_func.func_name)
-
-copy_reg.pickle(types.MethodType, _pickle_method)
+#import copy_reg
+#import types
+#
+#
+#def _pickle_method(m):
+#    if m.im_self is None:
+#        return getattr, (m.im_class, m.im_func.func_name)
+#    else:
+#        return getattr, (m.im_self, m.im_func.func_name)
+#
+#copy_reg.pickle(types.MethodType, _pickle_method)
 
 def overrideDict(sharedStruct, newStruct):
     old_keys = sharedStruct.keys()
@@ -33,7 +33,7 @@ def listener(game):
     soc = socket.socket()   
     soc.bind(("", game.pid)) 
     soc.listen(5) 
-    print "listening to ", game.pid
+    print("listening to ", game.pid)
     while True: 
         # establish connection with client 
         conn, addr = soc.accept() 
@@ -55,9 +55,10 @@ def sendMsg(player_ip, player_port, data):
         s.recv(BUFFER_SIZE)
         s.close()
     except Exception as e:
-        print "Could NOT send MSG to", player_ip
-        print e
-
+        print("Could NOT send MSG to", player_ip)
+        print(e)
+        
+        
 def manager(game): 
     soc = socket.socket()   
     soc.bind(("", game.sid)) 
@@ -79,7 +80,7 @@ def manager(game):
         d = game.get_teams()
         msg = "start"
         d["msg"] = msg
-        print d
+        print(d)
 
         pool = Pool(processes=4)
         for team in [game.assignedA, game.assignedB, game.unassigned]:

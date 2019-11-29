@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.7
 import os
 import time
 import socket
 import random
 import subprocess
-from constants import IPSTR, BUFFER_SIZE, SERVER_IP
+from constants import IPSTR, BUFFER_SIZE, SERVER_IP, KEY
 from multiprocessing import Process, Value, Array, Manager, Pool
 
 
@@ -12,8 +12,8 @@ def overrideDict(sharedStruct, newStruct):
     old_keys = sharedStruct.keys()
     used_keys = []
     for each in newStruct:
-        used_keys.append(each["name"])
-        sharedStruct[each["name"]] = each
+        used_keys.append(each[KEY])
+        sharedStruct[each[KEY]] = each
     for old_k in old_keys:
         if old_k not in used_keys:
             del sharedStruct[old_k]
@@ -22,19 +22,11 @@ def listener(player):
     soc = socket.socket()   
     soc.bind((SERVER_IP, player.sid)) 
     soc.listen(5) 
-    
     while True: 
         # establish connection with client 
         conn, addr = soc.accept() 
         # data received from client 
         data = eval(conn.recv(BUFFER_SIZE))
-
-        # {
-        #   "msg":"start", 
-        #   "assignedA":list, 
-        #   "assignedB":list, 
-        #   "unassigned":list
-        # }
 
         # update teams in parallel
         print(data)
@@ -46,7 +38,7 @@ def listener(player):
         elif data["msg"] == "stop":
             player.running.value = 0
 
-        print data["msg"], player.get_teams()
+        print(data["msg"], player.get_teams())
         
         # send recipt & close
         conn.send(data["msg"]) 
@@ -76,7 +68,7 @@ class Player:
             self.sid = int(s.recv(BUFFER_SIZE))
             s.close()
         except:
-            print "Could NOT establish a Handshake."
+            print("Could NOT establish a Handshake.")
     
     def notifyDeath(self):
         try:
@@ -86,7 +78,7 @@ class Player:
             s.recv(BUFFER_SIZE)
             s.close()
         except:
-            print "Could NOT send death note"
+            print("Could NOT send a death note")
 
     def startListening(self):
         while not self.proc:
@@ -110,18 +102,16 @@ class Player:
 
 
 
-SERVER_PORT = 3644
-
-
-client = Player(SERVER_PORT)
-client.joinRoom()
-client.startListening()
+#SERVER_PORT = 3644
+#client = Player(SERVER_PORT)
+#client.joinRoom()
+#client.startListening()
 # should get a start mssg
-start_time = time.time()
-while time.time() - start_time < 7:
-    pass
+#start_time = time.time()
+#while time.time() - start_time < 7:
+#    pass
 # dies after 7 seconds
-client.notifyDeath()
+#client.notifyDeath()
 
 # client.stopListening()
 
