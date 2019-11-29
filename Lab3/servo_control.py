@@ -3,6 +3,12 @@ import time               # Import time library
 
 
 def calculateFreqDC(step):
+    """
+    Returns the (frequency, dutyCycle) as tuple given a step.
+    
+    Param: step (float) bounded by -0.2 <= step <= +0.2
+    Return: (freq, dutyCycle) tuple of floats
+    """
     w = (1.5 + step)
     d = (20+w)
     return (1000/d, w/d*100)
@@ -11,7 +17,7 @@ def setMode(step,pwm):
     (fq, dc) = calculateFreqDC(step)    
     pwm.ChangeDutyCycle(dc)      
     pwm.ChangeFrequency(fq)
-    time.sleep(3)
+    
  
 GPIO.setmode(GPIO.BCM)    # Set Pi to use pin number when referencing GPIO pins.
                           # Can use GPIO.setmode(GPIO.BCM) instead to use 
@@ -31,11 +37,13 @@ try:
     for step in range(0, 21, 2):
         step = step/100.0
         setMode(step,pwm)
+        time.sleep(3)
 
     #speed up ounter-clockwise
     for step in range(0, -21, -2):
         step = step/100.0
         setMode(step,pwm)
+        time.sleep(3)
 
     pwm.stop()                      # stop PWM
     

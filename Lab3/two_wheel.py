@@ -2,6 +2,16 @@ import RPi.GPIO as GPIO   # Import the GPIO library.
 import time               # Import time library
 import os
 
+
+def calculateFreqDC(step):
+    w, d = (1.5 + step), (20+w)
+    return (1000/d, w/d*100)
+
+def setMode(step, pwm):
+    (fq, dc) = calculateFreqDC(step)    
+    pwm.ChangeDutyCycle(dc)      
+    pwm.ChangeFrequency(fq)
+
 GPIO.setmode(GPIO.BCM)   # Set for broadcom numbering
 
 ###########EXTERNAL###############
@@ -23,7 +33,6 @@ def GPIO21_callback(channel):
     print("falling edge detected on 21")
     setMode(-0.2, pwmL)
     
-
 def GPIO16_callback(channel):
     print("falling edge detected on 16")
     setMode(0, pwmL)
@@ -58,17 +67,6 @@ GPIO.setup(26, GPIO.OUT) # LEFT
 GPIO.setup(19, GPIO.OUT) # RIGHT
 GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_UP) # QUIT
 
-
-def calculateFreqDC(step):
-    w = (1.5 + step)
-    d = (20+w)
-    return (1000/d, w/d*100)
-
-def setMode(step, pwm):
-    (fq, dc) = calculateFreqDC(step)    
-    pwm.ChangeDutyCycle(dc)      
-    pwm.ChangeFrequency(fq)
-
 (fq, dc) = calculateFreqDC(0)                  
 pwmL = GPIO.PWM(26, fq)          # Intialize PWM
 pwmR = GPIO.PWM(19, fq)          # Intialize PWM
@@ -81,9 +79,5 @@ try:
     
 except:
     pass
-
 GPIO.cleanup() # clean up GPIO on exit
-
-
-
 
