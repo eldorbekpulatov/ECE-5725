@@ -1,10 +1,9 @@
-#!/usr/bin/python2.7
 import os
 import time
 import socket
 import random
 import subprocess
-from constants import IPSTR, BUFFER_SIZE, SERVER_IP, KEY
+from constants import BUFFER_SIZE, SERVER_IP, KEY
 from multiprocessing import Process, Value, Array, Manager, Pool
 
 
@@ -20,42 +19,44 @@ def overrideDict(sharedStruct, newStruct):
 
 def listener(player): 
     soc = socket.socket()   
-    soc.bind((SERVER_IP, player.sid)) 
-    soc.listen(5) 
+    soc.bind(("0.0.0.0", player.sid))
+    soc.listen(1) 
+    print("listening to port ", player.sid)
     while True: 
         # establish connection with client 
         conn, addr = soc.accept() 
         # data received from client 
-        data = eval(conn.recv(BUFFER_SIZE))
-
+        data = eval(conn.recv(BUFFER_SIZE).decode("UTF-8"))
         # update teams in parallel
-        print(data)
         player.override_teams(data)
-
+        print(data)
+        # send recipt 
+        conn.send("successfully updated") 
+        # close the connection
+        conn.close()
         # update the state of the game
         if data["msg"] == "start":
             player.running.value = 1
+            print("game started on port ", player.sid)
         elif data["msg"] == "stop":
             player.running.value = 0
-
-        print(data["msg"], player.get_teams())
-        
-        # send recipt & close
-        conn.send(data["msg"]) 
-        conn.close()
+            print("game terminated on port ", player.sid)
+            break  # exits the loop
     soc.close() 
+    print("closed port ", player.sid)
 
 
 class Player:
     def __init__(self, pub_id):
         self.pid = pub_id
+        self.ip = socket.gethostname()
         self.name = "client_"+str(random.randint(0,99))
-        self.ip = subprocess.check_output(IPSTR, shell=True).decode("utf-8")[:-1]
         self.manager = Manager()
         self.unassigned = self.manager.dict()
         self.assignedA = self.manager.dict()
         self.assignedB = self.manager.dict()
         self.running = Value("i", 0)
+        self.isAlive = 1
         self.team = None
         self.sid = None
         self.proc = None
@@ -64,9 +65,10 @@ class Player:
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect((SERVER_IP, self.pid))
-            s.send(str({"ip": self.ip, "name" : self.name, "isAlive": 1}))
-            self.sid = int(s.recv(BUFFER_SIZE))
+            s.send(str({"ip": self.ip, "name" : self.name, "isAlive": self.isAlive}).encode())
+            self.sid = int(s.recv(BUFFER_SIZE).decode("UTF-8"))
             s.close()
+            print("joined the game", self.pid)
         except:
             print("Could NOT establish a Handshake.")
     
@@ -74,7 +76,7 @@ class Player:
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect((SERVER_IP, self.sid))
-            s.send(str({"ip": self.ip, "name" :self.name, "isAlive": 0}))
+            s.send(str({"ip": self.ip, "name" :self.name, "isAlive": self.isAlive}).encode())
             s.recv(BUFFER_SIZE)
             s.close()
         except:
@@ -88,32 +90,36 @@ class Player:
     def stopListening(self):
         while self.proc.is_alive():
             self.proc.terminate()
+        self.proc = None
 
     def override_teams(self, data):
         pool = Pool(processes=3)
         pool.apply(overrideDict, args=(self.assignedA, data["assignedA"],))
         pool.apply(overrideDict, args=(self.assignedB, data["assignedB"],))
         pool.apply(overrideDict, args=(self.unassigned, data["unassigned"],))
+        pool.close()
+        pool.join()
 
     def get_teams(self):
-        return {"unassigned" : self.unassigned.values(), 
-                "assignedA" : self.assignedA.values(), 
-                "assignedB" : self.assignedB.values()}
+        return { "unassigned" : self.unassigned.values(), 
+                 "assignedA"  : self.assignedA.values(), 
+                 "assignedB"  : self.assignedB.values() }
 
 
+SERVER_PORT = 4267
+client = Player(SERVER_PORT)
+client.joinRoom()
+client.startListening()
 
-#SERVER_PORT = 3644
-#client = Player(SERVER_PORT)
-#client.joinRoom()
-#client.startListening()
-# should get a start mssg
-#start_time = time.time()
-#while time.time() - start_time < 7:
-#    pass
-# dies after 7 seconds
-#client.notifyDeath()
+while not client.running.value:
+    pass
 
-# client.stopListening()
+start_time = time.time()
+while time.time() - start_time < 5:
+    pass
 
-
+client.isAlive = 0
+client.notifyDeath()
     
+while client.running.value:
+    pass

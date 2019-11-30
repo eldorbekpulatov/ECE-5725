@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+#!/usr/bin/env python
 import os
 import time
 import random 
@@ -8,7 +8,7 @@ from multiprocessing import Process, Pipe, Queue
 from server import Game, listener
 from constants import GAMES
 
-app = Flask(__name__)  
+app = Flask(__name__, static_url_path='/static')  
 
 @app.route('/', methods=['GET'])  
 def welcome():  
@@ -24,9 +24,9 @@ def newgame(game_id=None):
         g = GAMES[game_id]
         return render_template("newgame.html", id=g.pid, ip=g.ip)
     elif game_id == None:
-        rand_id = random.randint(0, 6553)
+        rand_id = random.randint(1000, 6553)
         while (rand_id in GAMES):
-            rand_id = random.randint(0, 6553)
+            rand_id = random.randint(1000, 6553)
         g = Game(rand_id)
         GAMES[rand_id] = g
         if not g.isListening():
@@ -34,7 +34,37 @@ def newgame(game_id=None):
         return render_template("newgame.html", id=g.pid, ip=g.ip)
     else:
         return render_template("404.html", id=game_id)
+ 
 
+@app.route('/start/<int:game_id>', methods=['GET'])
+def startgame(game_id=None):
+    global GAMES
+    if game_id in GAMES: 
+        g = GAMES[game_id]
+        g.stopListening()
+        g.running.value = 1
+        if not g.isPlaying():
+            g.startPlaying()
+        g.notifyTeams("start")
+        g.notifyExtras("stop")
+        return render_template("startgame.html", id=g.pid, ip=g.ip)
+    else:
+        return render_template("404.html", id=game_id)
+
+
+@app.route('/stop/<int:game_id>', methods=['GET'])
+def stopgame(game_id=None):
+    global GAMES
+    if game_id in GAMES: 
+        g = GAMES[game_id]
+        g.running.value = 0
+        g.stopPlaying()
+        g.notifyTeams("stop")
+        winner = g.whoWon() # 0 1 2
+        return render_template("stopgame.html", id=g.pid, ip=g.ip, outcome=winner)
+    else:
+        return render_template("404.html", id=game_id)
+    
 
 @app.route('/teams', methods=['GET', 'POST'])
 def teams():
@@ -56,34 +86,7 @@ def teams():
         resp.headers['Access-Control-Allow-Origin'] = '*'
         resp.status_code = 200
         return resp
- 
-
-@app.route('/start/<int:game_id>', methods=['GET'])
-def startgame(game_id=None):
-    global GAMES
-    if game_id in GAMES: 
-        g = GAMES[game_id]
-        g.stopListening()
-        g.running.value = 1
-        if not g.isPlaying():
-            g.startPlaying()
-        return render_template("startgame.html", id=g.pid, ip=g.ip)
-    else:
-        return render_template("404.html", id=game_id)
 
 
-@app.route('/stop/<int:game_id>', methods=['GET'])
-def stopgame(game_id=None):
-    global GAMES
-    if game_id in GAMES: 
-        g = GAMES[game_id]
-        g.stopPlaying()
-        g.running.value = 0
-        winner = "Orange" # 0 1 2
-        return render_template("stopgame.html", id=g.pid, ip=g.ip, outcome=winner)
-    else:
-        return render_template("404.html", id=game_id)
-    
-    
 if __name__ == '__main__':  
     app.run(debug = True)  

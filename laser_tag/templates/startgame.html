@@ -49,7 +49,7 @@
 
         <script>
             var gameID = document.getElementById("gameid").innerHTML
-            var pollTime = 3000;  // do a poll every 3 seconds
+            var pollTime = 3000;  // do a poll every 2 seconds
             var poll = setInterval( pollFunc, pollTime); // init poll interval
             pollFunc() // do the poll
 
@@ -72,7 +72,6 @@
                     }else{
                         document.getElementById(element.ip).style.color = "red"
                     }
-                     
                 });
             }
                 
@@ -80,8 +79,6 @@
                 $.ajax({
                     url : '/teams?port='+gameID,
                     success: function(data) {
-                        console.log(data)
-                        updateChart(data.unassigned, "#sortable0");
                         updateChart(data.assignedA, "#sortable1");
                         updateChart(data.assignedB, "#sortable2");
                     },
