@@ -23,6 +23,7 @@
     </head>  
     <body> 
         <div class="container">
+            <br>
             <div class="row">
                 <h1>Game Number: <span id=gameid>{{id}}</span></h1>
             </div>
@@ -54,7 +55,7 @@
 
         <script>
             var gameID = document.getElementById("gameid").innerHTML
-            var pollTime = 3000;  // do a poll every 3 seconds
+            var pollTime = 3000;  // do a poll every 2 seconds
             var poll = setInterval( pollFunc, pollTime); // init poll interval
             pollFunc() // do the poll
 
@@ -66,9 +67,7 @@
             }
 
             function grabPlayers(){
-                unassigned = []
-                assignedA = []
-                assignedB = []
+                unassigned = []; assignedA = []; assignedB = []
                 d3.select("#sortable0").selectAll("li").each(function(d){unassigned.push(d)})
                 d3.select("#sortable1").selectAll("li").each(function(d){assignedA.push(d)})
                 d3.select("#sortable2").selectAll("li").each(function(d){assignedB.push(d)})
@@ -141,8 +140,13 @@
 
             // redirect page to start screen
             $("#start_button").click( function() { 
-                console.log(document.location);
-                document.location.pathname = "/start/" + gameID; 
+                teams = grabPlayers()
+                if (teams.assignedA.length > 0 && teams.assignedB.length > 0){
+                    document.location.pathname = "/start/" + gameID; 
+                }else{
+                    alert("Both teams must have players to begin!")
+                }
+                
             });
         </script>  
     </body>  
