@@ -533,13 +533,13 @@ class VestGun:
         # Trigger
         GPIO.setup(trigger, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.add_event_detect(trigger, GPIO.FALLING, callback=self.__trigger_cb, bouncetime=200)
-        signal.signal(signal.SIGALRM, __laser_off_cb)
-        signal.signal(signal.SIGIALRM, __add_ammo_cb)
+        signal.signal(signal.SIGALRM, self.__laser_off_cb)
+        signal.signal(signal.SIGIALRM, self.__add_ammo_cb)
 
         # Reload
         GPIO.setup(reload, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.add_event_detect(trigger, GPIO.FALLING, callback=self.__reload_cb, bouncetime=200)
-        signal.signal(signal.SIGVTALRM, __add_ammo_cb)
+        signal.signal(signal.SIGVTALRM, self.__add_ammo_cb)
 
         # Vibration motor
         GPIO.setup(motor, GPIO.OUT)
