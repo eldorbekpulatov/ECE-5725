@@ -599,6 +599,7 @@ class VestGun:
             GPIO.output(self.laser, GPIO.HIGH)
             GPIO.output(self.motor, GPIO.HIGH)
             self.firing = True
+            self.ammo -= 1
             signal.setitimer(signal.ITIMER_REAL, self.fire_length)
 
     def __laser_off_cb(self,signum,frame):
