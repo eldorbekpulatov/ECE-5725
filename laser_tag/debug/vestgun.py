@@ -71,7 +71,7 @@ class VestGun:
             self.firing = True
             signal.setitimer(signal.ITIMER_REAL, self.fire_length)
 
-    def __laser_off_cb(self):
+    def __laser_off_cb(self,signum,frame):
         # Turning laser off
         # Timer callback
         GPIO.output(self.laser, GPIO.LOW)
@@ -84,7 +84,7 @@ class VestGun:
             self.reloading = True
             signal.setitimer(signal.ITIMER_VIRTUAL, self.reload_interval)
 
-    def __add_ammo_cb(self):
+    def __add_ammo_cb(self,signum,frame):
         # Add one to ammo
         # Timer callback
         self.ammo += 1
