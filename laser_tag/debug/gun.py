@@ -538,7 +538,7 @@ class VestGun:
 
         # Reload
         GPIO.setup(reload, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.add_event_detect(trigger, GPIO.FALLING, callback=self.__reload_cb, bouncetime=200)
+        GPIO.add_event_detect(reload, GPIO.FALLING, callback=self.__reload_cb, bouncetime=200)
         signal.signal(signal.SIGVTALRM, self.__add_ammo_cb)
 
         # Vibration motor
