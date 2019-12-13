@@ -444,6 +444,10 @@ class UI:
         self.screen.blit(result_txt_surf,result_txt_rect)
 
         # Score
+        teams = self.player.get_teams()
+        teamA = teams["assignedA"]
+        teamB = teams["assignedB"]
+        num_teamA, num_teamB = len(teamA), len(teamB)
         alive_teamA,alive_teamB = self.__get_alive(num_teamA, num_teamB)
         score_surf = self.font.render(str(alive_teamA) + ":" + str(alive_teamB), True, self.WHITE)
         score_rect = score_surf.get_rect(center=(self.score_x, self.score_y))
