@@ -476,8 +476,8 @@ class UI:
         num_teamB = len(teamB)
         for mem in range(num_teamA):
             self.print_err = True
-            self.err_txt = 'mem = '
-            self.err_time = time.time() + teamA[mem]["name"]
+            self.err_txt = 'mem = ' + teamA[mem]["name"]
+            self.err_time = time.time()
             if teamA[mem]["name"] == self.player.name:
                 # self.print_err = True
                 # self.err_txt = 'Set team A'
