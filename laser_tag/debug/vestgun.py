@@ -47,6 +47,7 @@ class VestGun:
         self.laser = laser
         self.trigger = trigger
         self.reload_pin = reload_pin
+        self.motor = motor
         self.vest = vest
         self.green = green
         self.red = red
