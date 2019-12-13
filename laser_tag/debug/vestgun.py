@@ -68,6 +68,7 @@ class VestGun:
 
     def __laser_off_cb(self):
         # Turning laser off
+        # Timer callback
         GPIO.output(self.laser, GPIO.LOW)
         GPIO.output(self.motor, GPIO.LOW)
         self.firing = False
@@ -80,6 +81,7 @@ class VestGun:
 
     def __add_ammo_cb(self):
         # Add one to ammo
+        # Timer callback
         self.ammo += 1
         if self.ammo < self.max_ammo and self.alive:
             signal.setitimer(signal.ITIMER_VIRTUAL, self.reload_interval)
@@ -110,6 +112,7 @@ if __name__ == '__main__':
 
         player = None
         vest_gun = VestGun(player,laser,trigger,reload_pin,motor,vest,green,red)
+        vest_gun.alive = True
 
         while running:
             pass
