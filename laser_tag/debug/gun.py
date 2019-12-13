@@ -327,7 +327,15 @@ class UI:
         teamA = teams["assignedA"]
         teamB = teams["assignedB"]
         num_teamA, num_teamB = len(teamA), len(teamB)
-        alive_teamA,alive_teamB = self.__get_alive()
+        alive_teamA = 0
+        alive_teamB = 0
+        for mem in range(num_teamA):
+            if teamA[mem]["isAlive"]:
+                alive_teamA += 1
+
+        for mem in range(num_teamB):
+            if teamB[mem]["isAlive"]:
+                alive_teamB += 1
 
         # Team sizes
         teamA_size_surf = self.font.render("Alive: " + str(alive_teamA), True, self.WHITE)
@@ -448,7 +456,15 @@ class UI:
         teamA = teams["assignedA"]
         teamB = teams["assignedB"]
         num_teamA, num_teamB = len(teamA), len(teamB)
-        alive_teamA,alive_teamB = self.__get_alive(num_teamA, num_teamB)
+        alive_teamA = 0
+        alive_teamB = 0
+        for mem in range(num_teamA):
+            if teamA[mem]["isAlive"]:
+                alive_teamA += 1
+
+        for mem in range(num_teamB):
+            if teamB[mem]["isAlive"]:
+                alive_teamB += 1
         score_surf = self.font.render(str(alive_teamA) + ":" + str(alive_teamB), True, self.WHITE)
         score_rect = score_surf.get_rect(center=(self.score_x, self.score_y))
         self.screen.blit(score_surf,score_rect)
@@ -464,22 +480,22 @@ class UI:
                 text_rect = text_surf.get_rect(center=(self.err_x,self.err_y))
                 self.screen.blit(text_surf,text_rect)
     
-    def __get_alive(self):
-        teams = self.player.get_teams()
-        teamA = teams["assignedA"]
-        teamB = teams["assignedB"]
-        num_teamA, num_teamB = len(teamA), len(teamB)
-        alive_teamA = 0
-        alive_teamB = 0
-        for mem in range(num_teamA):
-            if teamA[mem]["isAlive"]:
-                alive_teamA += 1
+    # def __get_alive(self):
+    #     teams = self.player.get_teams()
+    #     teamA = teams["assignedA"]
+    #     teamB = teams["assignedB"]
+    #     num_teamA, num_teamB = len(teamA), len(teamB)
+    #     alive_teamA = 0
+    #     alive_teamB = 0
+    #     for mem in range(num_teamA):
+    #         if teamA[mem]["isAlive"]:
+    #             alive_teamA += 1
 
-        for mem in range(num_teamB):
-            if teamB[mem]["isAlive"]:
-                alive_teamB += 1
+    #     for mem in range(num_teamB):
+    #         if teamB[mem]["isAlive"]:
+    #             alive_teamB += 1
 
-        return alive_teamA,alive_teamB
+    #     return alive_teamA,alive_teamB
         
     def wait_frame_rate(self):
         self.clock.tick(self.frame_rate)
@@ -531,7 +547,19 @@ class UI:
     def end_game(self):
         # Game ended signal handler
         self.stage = 3 # Move to game over stage
-        alive_teamA,alive_teamB = self.__get_alive()
+        teams = self.player.get_teams()
+        teamA = teams["assignedA"]
+        teamB = teams["assignedB"]
+        num_teamA, num_teamB = len(teamA), len(teamB)
+        alive_teamA = 0
+        alive_teamB = 0
+        for mem in range(num_teamA):
+            if teamA[mem]["isAlive"]:
+                alive_teamA += 1
+
+        for mem in range(num_teamB):
+            if teamB[mem]["isAlive"]:
+                alive_teamB += 1
         if alive_teamA < alive_teamB:
             self.winner = 'B'
         elif alive_teamA > alive_teamB:
