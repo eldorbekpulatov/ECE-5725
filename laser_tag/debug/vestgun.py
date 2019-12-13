@@ -1,3 +1,7 @@
+import RPi.GPIO as GPIO
+import signal
+
+
 class VestGun:
 
     def __init__(self,player,laser,trigger,reload_pin,motor,vest,green,red):
