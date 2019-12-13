@@ -62,7 +62,7 @@ class VestGun:
             GPIO.output(self.green, GPIO.LOW)
             GPIO.output(self.red, GPIO.LOW)            
 
-    def __trigger_cb(self):
+    def __trigger_cb(self,channel):
         # Trigger pressed
         if not self.reloading and not self.firing and self.alive:
             GPIO.output(self.laser, GPIO.HIGH)
@@ -76,7 +76,7 @@ class VestGun:
         GPIO.output(self.motor, GPIO.LOW)
         self.firing = False
 
-    def __reload_cb(self):
+    def __reload_cb(self,channel):
         # Reloading button pressed
         if not self.reloading and not self.firing and self.ammo < self.max_ammo and self.alive:
             self.reloading = True
@@ -88,7 +88,7 @@ class VestGun:
         if self.ammo < self.max_ammo and self.alive:
             signal.setitimer(signal.ITIMER_VIRTUAL, self.reload_interval)
 
-    def __hit_cb(self):
+    def __hit_cb(self,channel):
         # Hit detected on vest
         if self.alive:
             self.health -= self.hit_dmg
