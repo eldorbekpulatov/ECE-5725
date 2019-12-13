@@ -75,9 +75,12 @@ class Player:
         
     def joinRoom(self):
         try:
+            print("In joinRoom")
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect((SERVER_IP, self.pid))
+            print("joinRoom connected")
             s.send(str({"ip": self.ip, "name" : self.name, "isAlive": self.isAlive}).encode())
+            print("joinRoom sent")
             self.sid = int(s.recv(BUFFER_SIZE).decode("UTF-8"))
             s.close()
             print("joined the game", self.pid)
