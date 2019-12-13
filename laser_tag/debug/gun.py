@@ -720,10 +720,10 @@ if __name__ == '__main__':
                         
                 
             if ui.stage == 1 and player.running.value:
-                ui.start_game(None,None)
+                ui.start_game()
                 game_started = True
             elif game_started and not player.running.value:
-                ui.stage = 3
+                ui.end_game()
             
             ui.update_screen()
             ui.wait_frame_rate()
