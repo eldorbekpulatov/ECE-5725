@@ -534,7 +534,7 @@ class VestGun:
         GPIO.setup(trigger, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.add_event_detect(trigger, GPIO.FALLING, callback=self.__trigger_cb, bouncetime=200)
         signal.signal(signal.SIGALRM, self.__laser_off_cb)
-        signal.signal(signal.SIGIALRM, self.__add_ammo_cb)
+        # signal.signal(signal.SIGIALRM, self.__add_ammo_cb)
 
         # Reload
         GPIO.setup(reload, GPIO.IN, pull_up_down=GPIO.PUD_UP)
