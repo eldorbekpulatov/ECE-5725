@@ -3,19 +3,13 @@ import pygame
 from pygame.locals import *
 import socket
 import threading
-# import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
 import signal
 import os
 import random
 import subprocess
 from constants import BUFFER_SIZE, SERVER_IP, KEY
 from multiprocessing import Process, Value, Array, Manager, Pool
-
-# Globals
-alt = 0
-coords = "(0, 0)"
-orient = 0
-running = True
 
 def overrideDict(sharedStruct, newStruct):
     old_keys = sharedStruct.keys()
@@ -29,9 +23,8 @@ def overrideDict(sharedStruct, newStruct):
 
 def listener(player): 
     soc = socket.socket()   
-    soc.bind(("0.0.0.0", player.sid))
+    soc.bind(("", player.sid))
     soc.listen(1) 
-    print("listening to port ", player.sid)
     while True: 
         # establish connection with client 
         conn, addr = soc.accept() 
@@ -39,27 +32,27 @@ def listener(player):
         data = eval(conn.recv(BUFFER_SIZE).decode("UTF-8"))
         # update teams in parallel
         player.override_teams(data)
-        print(data)
         # send recipt 
-        conn.send("successfully updated") 
+        conn.send("successfully updated".encode()) 
         # close the connection
         conn.close()
         # update the state of the game
         if data["msg"] == "start":
             player.running.value = 1
-            print("game started on port ", player.sid)
         elif data["msg"] == "stop":
             player.running.value = 0
-            print("game terminated on port ", player.sid)
             break  # exits the loop
-    soc.close() 
-    print("closed port ", player.sid)
+    soc.close()
 
 class Player:
-    def __init__(self, pub_id):
+    def __init__(self, pub_id = None):
         self.pid = pub_id
-        self.ip = socket.gethostname()
-        self.name = "client_"+str(random.randint(0,99))
+        # self.name = socket.gethostname()
+        self.name = "Alec"
+        try:
+            self.ip = subprocess.check_output(["hostname", "-I"])[:-2]
+        except:
+            self.ip = subprocess.check_output(["hostname"])[:-2]
         self.manager = Manager()
         self.unassigned = self.manager.dict()
         self.assignedA = self.manager.dict()
@@ -69,6 +62,9 @@ class Player:
         self.team = None
         self.sid = None
         self.proc = None
+
+    def setPID(self, pub_id):
+        self.pid = pub_id
         
     def joinRoom(self):
         try:
@@ -77,9 +73,8 @@ class Player:
             s.send(str({"ip": self.ip, "name" : self.name, "isAlive": self.isAlive}).encode())
             self.sid = int(s.recv(BUFFER_SIZE).decode("UTF-8"))
             s.close()
-            print("joined the game", self.pid)
         except:
-            print("Could NOT establish a Handshake.")
+            pass
     
     def notifyDeath(self):
         try:
@@ -89,7 +84,7 @@ class Player:
             s.recv(BUFFER_SIZE)
             s.close()
         except:
-            print("Could NOT send a death note")
+            pass
 
     def startListening(self):
         while not self.proc:
@@ -106,13 +101,11 @@ class Player:
         pool.apply(overrideDict, args=(self.assignedA, data["assignedA"],))
         pool.apply(overrideDict, args=(self.assignedB, data["assignedB"],))
         pool.apply(overrideDict, args=(self.unassigned, data["unassigned"],))
-        pool.close()
-        pool.join()
 
     def get_teams(self):
-        return { "unassigned" : self.unassigned.values(), 
-                 "assignedA"  : self.assignedA.values(), 
-                 "assignedB"  : self.assignedB.values() }
+        return {"unassigned" : self.unassigned.values(), 
+                "assignedA" : self.assignedA.values(), 
+                "assignedB" : self.assignedB.values()}
 
 class UI:
     
@@ -154,6 +147,10 @@ class UI:
     port_x = 0.5*(num_pad_x[3] + 0.5*num_pad_but_size + width)
     port_y = height/2-15
 
+    # Waiting text center
+    wait_x = width/2
+    wait_y = height/2
+
     # Team list size
     team_list_size = team_list_width,team_list_height = (width/2,height/2)
     team_list_space = 20
@@ -177,22 +174,42 @@ class UI:
     joinB_x = joinA_x
     joinB_y = joinA_y + 100
 
+    # Health title center
+    health_x = 0.5*(teamA_x + team_list_width + width)
+    health_y = height/2 - 50
+
+    # Ammo title center
+    ammo_x = health_x
+    ammo_y = height/2 + 50
+
+    # Result text center
+    result_x = width/2
+    result_y = height/2 - 50
+
+    # End score center
+    score_x = result_x
+    score_y = height/2 + 50
+    
+    # Error printing center
+    err_x = width/2
+    err_y = height - 30
+
     # Button colors for num pad
     num_pad_colors = [BLUE] * 10
     num_pad_colors.append(RED)
     num_pad_colors.append(GREEN)
 
-    def __init__(self):
+    def __init__(self, player = None, vestgun = None):
 
-        #os.putenv('SDL_VIDEODRIVER', 'fbcon')   # Display on piTFT
-        #os.putenv('SDL_FBDEV', '/dev/fb1')     
-        #os.putenv('SDL_MOUSEDRV', 'TSLIB')     # Track mouse clicks on piTFT
-        #os.putenv('SDL_MOUSEDEV', '/dev/input/touchscreen')
+        os.putenv('SDL_VIDEODRIVER', 'fbcon')   # Display on piTFT
+        os.putenv('SDL_FBDEV', '/dev/fb1')     
+        os.putenv('SDL_MOUSEDRV', 'TSLIB')     # Track mouse clicks on piTFT
+        os.putenv('SDL_MOUSEDEV', '/dev/input/touchscreen')
 
         pygame.init()
 
         #make mouse invisible
-        #pygame.mouse.set_visible(False)
+        pygame.mouse.set_visible(False)
 
         # window title 
         pygame.display.set_caption("LTA Base Station")# Font and size
@@ -203,7 +220,7 @@ class UI:
         self.screen = pygame.display.set_mode(self.size)
         
         # Game stage
-        # 0 - join, 1 - wait for start, 2 - game play, 3 - dead, 4 - game complete
+        # 0 - join, 1 - wait for start, 2 - game play, 3 - game complete
         self.stage = 0
         
         # Port entry
@@ -222,11 +239,17 @@ class UI:
         # 0 - unassigned, 1 - Team A, 2 - Team B
         self.team = 0
 
+        # Winning team
+        self.winner = None
+
         # Background color
         self.back_color = self.WHITE
 
+        # Player object
+        self.player = player
+
         # VestGun object
-        self.vest_gun = None
+        self.vest_gun = vestgun
         
     def __draw_quit(self):
         text_surf = self.font.render("QUIT", True, self.WHITE)
@@ -265,7 +288,13 @@ class UI:
         port_rect = port_surf.get_rect(center = (self.port_x, self.port_y + 30))
         self.screen.blit(port_surf, port_rect)
 
-    def __draw_teams(self,player):
+    def __draw_wait(self):
+
+        waiting_text_surf = self.large_font.render("Waiting for start...", True, self.GREEN)
+        waiting_text_rect = waiting_text_surf.get_rect(center=(self.wait_x,self.wait_y))
+        self.screen.blit(waiting_text_surf,waiting_text_rect)
+
+    def __draw_teams(self):
 
         # Backgrounds
         teamA_back_surf = pygame.Surface(self.team_list_size)
@@ -284,66 +313,123 @@ class UI:
         teamB_title_surf = self.font.render("Team B", True, self.WHITE)
         teamB_title_rect = teamB_title_surf.get_rect(topleft =(self.teamB_x, self.teamB_y))
         self.screen.blit(teamB_title_surf,teamB_title_rect)
-
-        # teams = player.get_teams()
-        teams = { "unassigned" : ["P1", "P2"], 
-                 "assignedA"  : ["P3", "P4"], 
-                 "assignedB"  : ["P5", "P6"] }
+        
+        teams = self.player.get_teams()
         teamA = teams["assignedA"]
         teamB = teams["assignedB"]
-        num_teamA = len(teamA)
-        num_teamB = len(teamB)
+        num_teamA, num_teamB = len(teamA), len(teamB)
+        alive_teamA = 0
+        alive_teamB = 0
+        for mem in range(num_teamA):
+            if teamA[mem]["isAlive"]:
+                alive_teamA += 1
+
+        for mem in range(num_teamB):
+            if teamB[mem]["isAlive"]:
+                alive_teamB += 1
 
         # Team sizes
-        teamA_size_surf = self.font.render("Members: " + str(num_teamA), True, self.WHITE)
+        teamA_size_surf = self.font.render("Alive: " + str(alive_teamA), True, self.WHITE)
         teamA_size_rect = teamA_title_surf.get_rect(topright =(self.teamA_x + self.team_list_width - 35, self.teamA_y))
         self.screen.blit(teamA_size_surf,teamA_size_rect)
-        teamB_size_surf = self.font.render("Members: " + str(num_teamB), True, self.WHITE)
+        teamB_size_surf = self.font.render("Alive: " + str(alive_teamB), True, self.WHITE)
         teamB_size_rect = teamB_title_surf.get_rect(topright =(self.teamB_x + self.team_list_width - 35, self.teamB_y))
         self.screen.blit(teamB_size_surf,teamB_size_rect)
 
         # Team members
         for memA in range(num_teamA):
-            teamA_mem_surf = self.font.render(teamA[memA], True, self.BLACK)
+            if teamA[memA]["isAlive"]:
+                mem_color = self.BLUE
+            else:
+                mem_color = self.BLACK
+            teamA_mem_surf = self.font.render(teamA[memA]["name"], True, mem_color)
             teamA_mem_rect = teamA_mem_surf.get_rect(topleft =(self.teamA_x, self.teamA_y + (1+memA)*self.team_list_space))
             self.screen.blit(teamA_mem_surf,teamA_mem_rect)
         for memB in range(num_teamB):
-            teamB_mem_surf = self.font.render(teamB[memB], True, self.BLACK)
+            if teamB[memB]["isAlive"]:
+                mem_color = self.BLUE
+            else:
+                mem_color = self.BLACK
+            teamB_mem_surf = self.font.render(teamB[memB]["name"], True, mem_color)
             teamB_mem_rect = teamB_mem_surf.get_rect(topleft =(self.teamB_x, self.teamB_y + (1+memB)*self.team_list_space))
             self.screen.blit(teamB_mem_surf,teamB_mem_rect)
-
-    def __draw_team_select(self):
-
-        # Backgrounds
-        joinA_back_surf = pygame.Surface(self.join_but_size)
-        joinA_back_rect = (self.joinA_x, self.joinA_y)
-        joinA_back_surf.fill(self.GREEN)
-        self.screen.blit(joinA_back_surf, joinA_back_rect)
-        joinB_back_surf = pygame.Surface(self.join_but_size)
-        joinB_back_rect = (self.joinB_x, self.joinB_y)
-        joinB_back_surf.fill(self.RED)
-        self.screen.blit(joinB_back_surf, joinB_back_rect)
-
-        # Text
-        joinA_text_surf = self.large_font.render("Join A", True, self.WHITE)
-        joinA_text_rect = joinA_text_surf.get_rect(center=(self.joinA_x + 0.5*self.join_but_width,self.joinA_y + 0.5*self.join_but_height))
-        self.screen.blit(joinA_text_surf,joinA_text_rect)
-        joinB_text_surf = self.large_font.render("Join B", True, self.WHITE)
-        joinB_text_rect = joinB_text_surf.get_rect(center=(self.joinB_x + 0.5*self.join_but_width,self.joinB_y + 0.5*self.join_but_height))
-        self.screen.blit(joinB_text_surf,joinB_text_rect)
-
-        # Selection indicator
-        if self.team == 1:
-            # Team A
-            selA_rect = pygame.Rect(self.joinA_x, self.joinA_y, self.join_but_width, self.join_but_height)
-            pygame.draw.rect(self.screen, self.YELLOW, selA_rect, 3)
-        elif self.team == 2:
-            # Team B
-            selB_rect = pygame.Rect(self.joinB_x, self.joinB_y, self.join_but_width, self.join_but_height)
-            pygame.draw.rect(self.screen, self.YELLOW, selB_rect, 3)
         
-    # def __draw_game_info(self):
+    def __draw_game_info(self):
 
+        # Titles
+        health_title_surf = self.font.render("Health", True, self.WHITE)
+        health_title_rect = health_title_surf.get_rect(center=(self.health_x, self.health_y))
+        self.screen.blit(health_title_surf,health_title_rect)
+        ammo_title_surf = self.font.render("Ammo", True, self.WHITE)
+        ammo_title_rect = ammo_title_surf.get_rect(center=(self.ammo_x, self.ammo_y))
+        self.screen.blit(ammo_title_surf,ammo_title_rect)
+
+        # Health
+        if self.vest_gun.health == 0:
+            health_color = self.BLACK
+        elif self.vest_gun.health <= self.vest_gun.max_health/4:
+            health_color = self.RED
+        elif self.vest_gun.health <= self.vest_gun.max_health/2:
+            health_color = self.YELLOW
+        else:
+            health_color = self.GREEN
+        health_surf = self.font.render(str(self.vest_gun.health) + "/" + str(self.vest_gun.max_health), True, health_color)
+        health_rect = health_surf.get_rect(center=(self.health_x, self.health_y + 20))
+        self.screen.blit(health_surf, health_rect)
+
+        # Ammo
+        if self.vest_gun.ammo == 0:
+            ammo_color = self.BLACK
+        elif self.vest_gun.ammo <= self.vest_gun.max_ammo/4:
+            ammo_color = self.RED
+        elif self.vest_gun.ammo <= self.vest_gun.max_ammo/2:
+            ammo_color = self.YELLOW
+        else:
+            ammo_color = self.GREEN
+        ammo_surf = self.font.render(str(self.vest_gun.ammo) + "/" + str(self.vest_gun.max_ammo), True, ammo_color)
+        ammo_rect = ammo_surf.get_rect(center=(self.ammo_x, self.ammo_y + 20))
+        self.screen.blit(ammo_surf, ammo_rect)
+
+    def __draw_end_game(self):
+        
+        # Background set to winning color
+        if self.winner == 'A':
+            self.back_color = self.GREEN
+        elif self.winner == 'B':
+            self.back_color = self.RED
+        else:
+            self.back_color = self.WHITE
+
+        # Result text
+        if self.team == self.winner:
+            result_txt_surf = self.large_font.render("You Won!", True, self.YELLOW)
+            result_txt_rect = result_txt_surf.get_rect(center=(self.result_x, self.result_y))
+        elif self.winner == 'Tie':
+            result_txt_surf = self.large_font.render("You Tied!", True, self.BLACK)
+            result_txt_rect = result_txt_surf.get_rect(center=(self.result_x, self.result_y))
+        else:
+            result_txt_surf = self.large_font.render("You Lost!", True, self.BLUE)
+            result_txt_rect = result_txt_surf.get_rect(center=(self.result_x, self.result_y))
+        self.screen.blit(result_txt_surf,result_txt_rect)
+
+        # Score
+        teams = self.player.get_teams()
+        teamA = teams["assignedA"]
+        teamB = teams["assignedB"]
+        num_teamA, num_teamB = len(teamA), len(teamB)
+        alive_teamA = 0
+        alive_teamB = 0
+        for mem in range(num_teamA):
+            if teamA[mem]["isAlive"]:
+                alive_teamA += 1
+
+        for mem in range(num_teamB):
+            if teamB[mem]["isAlive"]:
+                alive_teamB += 1
+        score_surf = self.font.render(str(alive_teamA) + ":" + str(alive_teamB), True, self.WHITE)
+        score_rect = score_surf.get_rect(center=(self.score_x, self.score_y))
+        self.screen.blit(score_surf,score_rect)
+         
         
     def __draw_error_running(self):
         if self.print_err:
@@ -365,17 +451,72 @@ class UI:
             # Port entry stage
             self.__draw_num_pad()
         elif self.stage == 1:
-            # Team selection stage
-            self.__draw_teams("Player")
-            self.__draw_team_select()
+            # Wait for start stage
+            self.__draw_wait()
         elif self.stage == 2:
             # Game play stage
-            pass
+            self.__draw_teams()
+            self.__draw_game_info()
+        elif self.stage == 3:
+            # Game over stage
+            self.__draw_end_game()
+        self.__draw_error_running()
         pygame.display.flip()
+
+    def start_game(self):
+        # Game started signal handler
+
+        self.stage = 2 # Move to game play stage
+
+        # Determine player team
+        teams = self.player.get_teams()
+        teamA = teams["assignedA"]
+        teamB = teams["assignedB"]
+        num_teamA = len(teamA)
+        num_teamB = len(teamB)
+        for mem in range(num_teamA):
+            if teamA[mem]["name"] == self.player.name:
+                vest_gun.set_team('A')
+                return
+
+        for mem in range(num_teamB):
+            if teamB[mem]["name"] == self.player.name:
+                # self.print_err = True
+                # self.err_txt = 'Set team B'
+                # self.err_time = time.time()
+                vest_gun.set_team('B')
+                return
+                
+        vest_gun.alive = True
+    
+    def end_game(self):
+        # Game ended signal handler
+        self.stage = 3 # Move to game over stage
+        teams = self.player.get_teams()
+        teamA = teams["assignedA"]
+        teamB = teams["assignedB"]
+        num_teamA, num_teamB = len(teamA), len(teamB)
+        alive_teamA = 0
+        alive_teamB = 0
+        for mem in range(num_teamA):
+            if teamA[mem]["isAlive"]:
+                alive_teamA += 1
+
+        for mem in range(num_teamB):
+            if teamB[mem]["isAlive"]:
+                alive_teamB += 1
+        if alive_teamA < alive_teamB:
+            self.winner = 'B'
+        elif alive_teamA > alive_teamB:
+            self.winner = 'A'
+        else:
+            self.winner = 'Tie'
+
+        
     
 class VestGun:
 
-    def __init__(self,player,laser,trigger,reload,vest,green,red):
+    def __init__(self,player,laser,trigger,reload_pin,motor,vest,green,red):
 
         GPIO.setmode(GPIO.BCM)
 
@@ -385,17 +526,19 @@ class VestGun:
         # Trigger
         GPIO.setup(trigger, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.add_event_detect(trigger, GPIO.FALLING, callback=self.__trigger_cb, bouncetime=200)
-        signal.signal(signal.SIGALRM, __laser_off_cb)
-        signal.signal(signal.SIGIALRM, __add_ammo_cb)
+        signal.signal(signal.SIGALRM, self.__laser_off_cb)
 
         # Reload
-        GPIO.setup(reload, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.add_event_detect(trigger, GPIO.FALLING, callback=self.__reload_cb, bouncetime=200)
-        signal.signal(signal.SIGVTALRM, __add_ammo_cb)
+        GPIO.setup(reload_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.add_event_detect(reload_pin, GPIO.FALLING, callback=self.__reload_cb, bouncetime=200)
+        signal.signal(signal.SIGVTALRM, self.__add_ammo_cb)
+
+        # Vibration motor
+        GPIO.setup(motor, GPIO.OUT)
 
         # Vest sensors
-        GPIO.setup(vest, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.add_event_detect(trigger, GPIO.FALLING, callback=GPIO27_callback, bouncetime=200)
+        GPIO.setup(vest, GPIO.IN)
+        GPIO.add_event_detect(vest, GPIO.FALLING, callback=self.__hit_cb, bouncetime=1000)
 
         # Vest LEDs
         GPIO.setup(green, GPIO.OUT)
@@ -404,21 +547,24 @@ class VestGun:
         self.ammo = 12
         self.health = 100
         self.max_ammo = 12
-        self.fire_length = 0.25
-        self.reload_interval = 0.1
-        self.hit_dmg = 10
-        self.alive = True
+        self.max_health = 100
+        self.fire_length = 0.5
+        self.reload_interval = 0.01
+        self.hit_dmg = 50
+        self.alive = False
         self.reloading = False
         self.firing = False
         self.player = player
         self.laser = laser
         self.trigger = trigger
-        self.reload = reload
+        self.reload_pin = reload_pin
+        self.motor = motor
         self.vest = vest
         self.green = green
         self.red = red
 
     def set_team(self,team):
+
         if team == 'A':
             GPIO.output(self.green, GPIO.HIGH)
             GPIO.output(self.red, GPIO.LOW)
@@ -426,40 +572,54 @@ class VestGun:
             GPIO.output(self.green, GPIO.LOW)
             GPIO.output(self.red, GPIO.HIGH)
         else:
-            GPIO.output(self.green, GPIO.LOW)
-            GPIO.output(self.red, GPIO.LOW)            
+            GPIO.output(self.green, GPIO.HIGH)
+            GPIO.output(self.red, GPIO.HIGH)            
 
-    def __trigger_cb(self):
+    def __trigger_cb(self,channel):
         # Trigger pressed
-        if not self.reloading and not self.firing and self.alive:
+        if not self.reloading and self.ammo and not self.firing and self.alive:
             GPIO.output(self.laser, GPIO.HIGH)
+            GPIO.output(self.motor, GPIO.HIGH)
             self.firing = True
+            self.ammo -= 1
+            pygame.mixer.music.load("shot.mp3")
+            pygame.mixer.music.play()
             signal.setitimer(signal.ITIMER_REAL, self.fire_length)
 
-    def __laser_off_cb(self):
+    def __laser_off_cb(self,signum,frame):
         # Turning laser off
+        # Timer callback
         GPIO.output(self.laser, GPIO.LOW)
+        GPIO.output(self.motor, GPIO.LOW)
         self.firing = False
 
-    def __reload_cb(self):
+    def __reload_cb(self,channel):
         # Reloading button pressed
         if not self.reloading and not self.firing and self.ammo < self.max_ammo and self.alive:
             self.reloading = True
+            pygame.mixer.music.load("reload.mp3")
+            pygame.mixer.music.play()
             signal.setitimer(signal.ITIMER_VIRTUAL, self.reload_interval)
 
-    def __add_ammo_cb(self):
+    def __add_ammo_cb(self,signum,frame):
         # Add one to ammo
+        # Timer callback
         self.ammo += 1
         if self.ammo < self.max_ammo and self.alive:
             signal.setitimer(signal.ITIMER_VIRTUAL, self.reload_interval)
+            pygame.mixer.music.load("reload.mp3")
+            pygame.mixer.music.play()
+        elif self.alive:
+            self.reloading = False
 
-    def __hit_cb(self):
+    def __hit_cb(self,channel):
         # Hit detected on vest
         if self.alive:
             self.health -= self.hit_dmg
             if self.health <= 0:
                 # dead
                 self.alive = False
+                self.player.isAlive = 0
                 self.player.notifyDeath()
     
 
@@ -467,7 +627,23 @@ if __name__ == '__main__':
     
     try:
 
-        ui = UI()
+        running = True
+        
+        laser = 16
+        motor = 12
+        trigger = 20
+        reload_pin = 21
+        vest = 13
+        green = 19
+        red = 26
+
+        game_started = False
+
+        player = Player()
+
+        vest_gun = VestGun(player,laser,trigger,reload_pin,motor,vest,green,red)
+
+        ui = UI(player, vest_gun)
         ui.update_screen()
 
         while running:
@@ -497,35 +673,28 @@ if __name__ == '__main__':
                                         ui.port_txt = ui.port_txt[:-1]
                                     else:
                                         # Go button
-                                        # game = Player(int(ui.port_txt))
-                                        # game.joinRoom()
-                                        # game.startListening()
+                                        player.setPID(int(ui.port_txt))
+                                        player.joinRoom()
+                                        player.startListening()
+                                        vest_gun.alive = True
                                         ui.port_txt = ""
                                         ui.stage = 1
                                         pass
-                        elif ui.stage == 1:
-                            # Waiting for game start
-                            if x > ui.joinA_x and x < ui.joinA_x + ui.join_but_width and y > ui.joinA_y and y < ui.joinA_y + ui.join_but_height:
-                                # Join A button
-                                ui.team = 1
-                            elif x > ui.joinB_x and x < ui.joinB_x + ui.join_but_width and y > ui.joinB_y and y < ui.joinB_y + ui.join_but_height:
-                                # Join B button
-                                ui.team = 2
-                        elif ui.stage == 2:
-                            # Game play
-                            pass
-                        elif ui.stage == 3:
-                            # Death
-                            pass
+                        
+                
+            if ui.stage == 1 and player.running.value:
+                ui.start_game()
+                game_started = True
+            elif game_started and not player.running.value:
+                ui.end_game()
             
             ui.update_screen()
             ui.wait_frame_rate()
     except:
-        print("Error")
-        #terminate_server(server_ip,server_port)
         pygame.quit()
+        GPIO.cleanup()
         raise
     
-    #terminate_server(server_ip,server_port)
     pygame.quit()
+    GPIO.cleanup()
 
