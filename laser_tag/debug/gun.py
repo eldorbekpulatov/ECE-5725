@@ -636,6 +636,7 @@ class VestGun:
             if self.health <= 0:
                 # dead
                 self.alive = False
+                self.player.isAlive = 0
                 self.player.notifyDeath()
     
 
