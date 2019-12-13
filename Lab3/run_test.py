@@ -7,10 +7,10 @@ from pygame.locals import *
 import RPi.GPIO as GPIO
 from collections import deque
 
-os.putenv('SDL_VIDEODRIVER', 'fbcon')   # Display on piTFT
-os.putenv('SDL_FBDEV', '/dev/fb1')     
-os.putenv('SDL_MOUSEDRV', 'TSLIB')     # Track mouse clicks on piTFT
-os.putenv('SDL_MOUSEDEV', '/dev/input/touchscreen')
+#os.putenv('SDL_VIDEODRIVER', 'fbcon')   # Display on piTFT
+#os.putenv('SDL_FBDEV', '/dev/fb1')     
+#os.putenv('SDL_MOUSEDRV', 'TSLIB')     # Track mouse clicks on piTFT
+#os.putenv('SDL_MOUSEDEV', '/dev/input/touchscreen')
 
 #make mouse invisible
 #pygame.mouse.set_visible(False)
@@ -252,7 +252,7 @@ def update_state():
             left_stop()
             right_stop()
             state_time = time.time()
-			trans_time = 0.5
+            trans_time = 0.5
         else:
             next_state = "forward"
     elif state == "back":
@@ -262,7 +262,7 @@ def update_state():
             left_stop()
             right_stop()
             state_time = time.time()
-			trans_time = 0.5
+            trans_time = 0.5
         else:
             next_state = "back"
     elif state == "l_pivot":
@@ -272,7 +272,7 @@ def update_state():
             left_stop()
             right_stop()
             state_time = time.time()
-			trans_time = 0.5
+            trans_time = 0.5
         else:
             next_state = "l_pivot"
     elif state == "r_pivot":
@@ -282,7 +282,7 @@ def update_state():
             left_stop()
             right_stop()
             state_time = time.time()
-			trans_time = 0.5
+            trans_time = 0.5
         else:
             next_state = "r_pivot"
     elif state == "stop":
@@ -305,7 +305,7 @@ def update_state():
                 right_forward()
             prev_state = "stop"
             state_time = time.time()
-			trans_time = 1.
+            trans_time = 1.
         else:
             next_state = "stop"
 
@@ -332,30 +332,30 @@ try:
                         # Motors resuming
                         pwmL.start(dc)
                         pwmR.start(dc)
-						state_time = time.time() # State resume time
-						
-						# Rewrite motor directions based on state
-						if state == "forward":
-							left_forward()
-							right_forward()
-						elif state == "back":
-							left_back()
-							right_back()
-						elif state == "l_pivot":
-							left_back()
-							right_forward()
-						elif state == "r_pivot":
-							left_forward()
-							right_back()
-						elif state == "stop":
-							left_stop()
-							right_stop()
-						
+                        state_time = time.time() # State resume time
+                        
+                        # Rewrite motor directions based on state
+                        if state == "forward":
+                            left_forward()
+                            right_forward()
+                        elif state == "back":
+                            left_back()
+                            right_back()
+                        elif state == "l_pivot":
+                            left_back()
+                            right_forward()
+                        elif state == "r_pivot":
+                            left_forward()
+                            right_back()
+                        elif state == "stop":
+                            left_stop()
+                            right_stop()
+                        
                     else:
                         # Motors stopping
                         pwmL.stop()
                         pwmR.stop()
-						trans_time -= time.time() - state_time # Time left in state when resumed
+                        trans_time -= time.time() - state_time # Time left in state when resumed
                     
                     update_screen()
                     
