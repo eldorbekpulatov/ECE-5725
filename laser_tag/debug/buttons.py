@@ -9,13 +9,13 @@ pygame.mixer.init()
 
 
 # set pin numbers
-LaserPin = 21
-MotorPin = 20
-TriggerPin = 16
-ReloadPin = 12
+LaserPin = 16
+MotorPin = 12
+TriggerPin = 20
+ReloadPin = 21
 SensorPin = 13
 GreenPin = 19
-Redpin = 26
+RedPin = 26
 
 
 # Set GPIO pin modes
@@ -30,23 +30,27 @@ GPIO.setup(ReloadPin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 
 def reload_callback(channel):
+    print("reload pressed")
     pygame.mixer.music.load("reload.mp3")
     pygame.mixer.music.play()
 
 
 def trigger_callback(channel):
-    if GPIO.input(TriggerPin):      
+    if not GPIO.input(TriggerPin):
+        print("pressed")
         pygame.mixer.music.load("shot.mp3")
         pygame.mixer.music.play() # make it a thread
-        GPIO.output(LaserPin, GPIO.LOW)
-        GPIO.output(MotorPin, GPIO.LOW)
-    else:
         GPIO.output(LaserPin, GPIO.HIGH)
         GPIO.output(MotorPin, GPIO.HIGH)
+    else:
+        print("released")
+        GPIO.output(LaserPin, GPIO.LOW)
+        GPIO.output(MotorPin, GPIO.LOW)
     
 
 def sensor_callback(channel):
-    if GPIO.input(TriggerPin):      
+    if GPIO.input(TriggerPin):
+        print("light detected")
         GPIO.output(RedPin, GPIO.HIGH)
         GPIO.output(GreenPin, GPIO.LOW)
     else:
