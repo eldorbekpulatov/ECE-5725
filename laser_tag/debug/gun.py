@@ -477,6 +477,7 @@ class UI:
         for mem in range(num_teamA):
             if teamA[mem]["name"] == self.player.name:
                 vest_gun.set_team('A')
+                self.team = 'A'
                 return
 
         for mem in range(num_teamB):
@@ -485,6 +486,7 @@ class UI:
                 # self.err_txt = 'Set team B'
                 # self.err_time = time.time()
                 vest_gun.set_team('B')
+                self.team = 'B'
                 return
                 
         vest_gun.alive = True
