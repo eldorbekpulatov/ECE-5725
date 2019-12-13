@@ -550,7 +550,7 @@ class VestGun:
         self.max_health = 100
         self.fire_length = 0.5
         self.reload_interval = 0.01
-        self.hit_dmg = 50
+        self.hit_dmg = 20
         self.alive = False
         self.reloading = False
         self.firing = False
