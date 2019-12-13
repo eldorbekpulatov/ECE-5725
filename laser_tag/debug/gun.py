@@ -25,7 +25,6 @@ def listener(player):
     soc = socket.socket()   
     soc.bind(("", player.sid))
     soc.listen(1) 
-    print("listening to port ", player.sid)
     while True: 
         # establish connection with client 
         conn, addr = soc.accept() 
@@ -33,7 +32,6 @@ def listener(player):
         data = eval(conn.recv(BUFFER_SIZE).decode("UTF-8"))
         # update teams in parallel
         player.override_teams(data)
-        print(data)
         # send recipt 
         conn.send("successfully updated".encode()) 
         # close the connection
@@ -41,15 +39,10 @@ def listener(player):
         # update the state of the game
         if data["msg"] == "start":
             player.running.value = 1
-            print("game started on port ", player.sid)
-            #os.kill(os.getpid(), signal.SIGUSR1)
         elif data["msg"] == "stop":
             player.running.value = 0
-            print("game terminated on port ", player.sid)
-            #os.kill(os.getpid(), signal.SIGUSR2)
             break  # exits the loop
-    soc.close() 
-    print("closed port ", player.sid)
+    soc.close()
 
 class Player:
     def __init__(self, pub_id = None):
@@ -80,10 +73,8 @@ class Player:
             s.send(str({"ip": self.ip, "name" : self.name, "isAlive": self.isAlive}).encode())
             self.sid = int(s.recv(BUFFER_SIZE).decode("UTF-8"))
             s.close()
-            print("joined the game", self.pid)
         except:
-            print("Could NOT establish a Handshake.")
-            raise
+            pass
     
     def notifyDeath(self):
         try:
@@ -93,7 +84,7 @@ class Player:
             s.recv(BUFFER_SIZE)
             s.close()
         except:
-            print("Could NOT send a death note")
+            pass
 
     def startListening(self):
         while not self.proc:
@@ -218,7 +209,7 @@ class UI:
         pygame.init()
 
         #make mouse invisible
-        #pygame.mouse.set_visible(False)
+        pygame.mouse.set_visible(False)
 
         # window title 
         pygame.display.set_caption("LTA Base Station")# Font and size
@@ -229,7 +220,7 @@ class UI:
         self.screen = pygame.display.set_mode(self.size)
         
         # Game stage
-        # 0 - join, 1 - wait for start, 2 - game play, 3 - dead, 4 - game complete
+        # 0 - join, 1 - wait for start, 2 - game play, 3 - game complete
         self.stage = 0
         
         # Port entry
@@ -362,36 +353,6 @@ class UI:
             teamB_mem_surf = self.font.render(teamB[memB]["name"], True, mem_color)
             teamB_mem_rect = teamB_mem_surf.get_rect(topleft =(self.teamB_x, self.teamB_y + (1+memB)*self.team_list_space))
             self.screen.blit(teamB_mem_surf,teamB_mem_rect)
-
-    # def __draw_team_select(self):
-
-    #     # Backgrounds
-    #     joinA_back_surf = pygame.Surface(self.join_but_size)
-    #     joinA_back_rect = (self.joinA_x, self.joinA_y)
-    #     joinA_back_surf.fill(self.GREEN)
-    #     self.screen.blit(joinA_back_surf, joinA_back_rect)
-    #     joinB_back_surf = pygame.Surface(self.join_but_size)
-    #     joinB_back_rect = (self.joinB_x, self.joinB_y)
-    #     joinB_back_surf.fill(self.RED)
-    #     self.screen.blit(joinB_back_surf, joinB_back_rect)
-
-    #     # Text
-    #     joinA_text_surf = self.large_font.render("Join A", True, self.WHITE)
-    #     joinA_text_rect = joinA_text_surf.get_rect(center=(self.joinA_x + 0.5*self.join_but_width,self.joinA_y + 0.5*self.join_but_height))
-    #     self.screen.blit(joinA_text_surf,joinA_text_rect)
-    #     joinB_text_surf = self.large_font.render("Join B", True, self.WHITE)
-    #     joinB_text_rect = joinB_text_surf.get_rect(center=(self.joinB_x + 0.5*self.join_but_width,self.joinB_y + 0.5*self.join_but_height))
-    #     self.screen.blit(joinB_text_surf,joinB_text_rect)
-
-    #     # Selection indicator
-    #     if self.team == 1:
-    #         # Team A
-    #         selA_rect = pygame.Rect(self.joinA_x, self.joinA_y, self.join_but_width, self.join_but_height)
-    #         pygame.draw.rect(self.screen, self.YELLOW, selA_rect, 3)
-    #     elif self.team == 2:
-    #         # Team B
-    #         selB_rect = pygame.Rect(self.joinB_x, self.joinB_y, self.join_but_width, self.join_but_height)
-    #         pygame.draw.rect(self.screen, self.YELLOW, selB_rect, 3)
         
     def __draw_game_info(self):
 
@@ -479,23 +440,6 @@ class UI:
                 text_surf = self.font.render(self.err_txt, True, self.RED)
                 text_rect = text_surf.get_rect(center=(self.err_x,self.err_y))
                 self.screen.blit(text_surf,text_rect)
-    
-    # def __get_alive(self):
-    #     teams = self.player.get_teams()
-    #     teamA = teams["assignedA"]
-    #     teamB = teams["assignedB"]
-    #     num_teamA, num_teamB = len(teamA), len(teamB)
-    #     alive_teamA = 0
-    #     alive_teamB = 0
-    #     for mem in range(num_teamA):
-    #         if teamA[mem]["isAlive"]:
-    #             alive_teamA += 1
-
-    #     for mem in range(num_teamB):
-    #         if teamB[mem]["isAlive"]:
-    #             alive_teamB += 1
-
-    #     return alive_teamA,alive_teamB
         
     def wait_frame_rate(self):
         self.clock.tick(self.frame_rate)
@@ -508,8 +452,6 @@ class UI:
             self.__draw_num_pad()
         elif self.stage == 1:
             # Wait for start stage
-            # self.__draw_teams("Player")
-            # self.__draw_team_select()
             self.__draw_wait()
         elif self.stage == 2:
             # Game play stage
@@ -582,7 +524,6 @@ class VestGun:
         GPIO.setup(trigger, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.add_event_detect(trigger, GPIO.FALLING, callback=self.__trigger_cb, bouncetime=200)
         signal.signal(signal.SIGALRM, self.__laser_off_cb)
-        # signal.signal(signal.SIGIALRM, self.__add_ammo_cb)
 
         # Reload
         GPIO.setup(reload_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -695,12 +636,6 @@ if __name__ == '__main__':
         ui = UI(player, vest_gun)
         ui.update_screen()
 
-        # Signal handler for game starting
-        #signal.signal(signal.SIGUSR1, ui.start_game)
-
-        # Signal handler for game ending
-        # signal.signal(signal.SIGUSR2, ui.end_game)
-
         while running:
 
             for event in pygame.event.get():
@@ -735,21 +670,6 @@ if __name__ == '__main__':
                                         ui.port_txt = ""
                                         ui.stage = 1
                                         pass
-                        # elif ui.stage == 1:
-                        #     # Waiting for game start
-                        #     # if x > ui.joinA_x and x < ui.joinA_x + ui.join_but_width and y > ui.joinA_y and y < ui.joinA_y + ui.join_but_height:
-                        #     #     # Join A button
-                        #     #     ui.team = 1
-                        #     # elif x > ui.joinB_x and x < ui.joinB_x + ui.join_but_width and y > ui.joinB_y and y < ui.joinB_y + ui.join_but_height:
-                        #     #     # Join B button
-                        #     #     ui.team = 2
-                        #     pass
-                        # elif ui.stage == 2:
-                        #     # Game play
-                        #     pass
-                        # elif ui.stage == 3:
-                        #     # Game over
-                        #     pass
                         
                 
             if ui.stage == 1 and player.running.value:
@@ -761,13 +681,10 @@ if __name__ == '__main__':
             ui.update_screen()
             ui.wait_frame_rate()
     except:
-        print("Error")
-        #terminate_server(server_ip,server_port)
         pygame.quit()
         GPIO.cleanup()
         raise
     
-    #terminate_server(server_ip,server_port)
     pygame.quit()
     GPIO.cleanup()
 
