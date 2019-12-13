@@ -435,6 +435,9 @@ class UI:
         if self.team == self.winner:
             result_txt_surf = self.large_font.render("You Won!", True, self.YELLOW)
             result_txt_rect = result_txt_surf.get_rect(center=(self.result_x, self.result_y))
+        elif self.winner == 'Tie':
+            result_txt_surf = self.large_font.render("You Tied!", True, self.BLACK)
+            result_txt_rect = result_txt_surf.get_rect(center=(self.result_x, self.result_y))
         else:
             result_txt_surf = self.large_font.render("You Lost!", True, self.BLUE)
             result_txt_rect = result_txt_surf.get_rect(center=(self.result_x, self.result_y))
@@ -498,7 +501,7 @@ class UI:
         self.__draw_error_running()
         pygame.display.flip()
 
-    def start_game(self, signum, frame):
+    def start_game(self):
         # Game started signal handler
 
         self.stage = 2 # Move to game play stage
@@ -521,14 +524,16 @@ class UI:
                 
         vest_gun.alive = True
     
-    def end_game(self, signum, frame):
+    def end_game(self):
         # Game ended signal handler
         self.stage = 3 # Move to game over stage
         alive_teamA,alive_teamB = self.__get_alive()
-        if not alive_teamA:
+        if alive_teamA < alive_teamB:
             self.winner = 'B'
-        else:
+        elif alive_teamA > alive_teamB:
             self.winner = 'A'
+        else:
+            self.winner = 'Tie'
 
         
     
@@ -567,7 +572,7 @@ class VestGun:
         self.health = 100
         self.max_ammo = 12
         self.max_health = 100
-        self.fire_length = 1
+        self.fire_length = 0.5
         self.reload_interval = 0.01
         self.hit_dmg = 10
         self.alive = False
@@ -621,6 +626,8 @@ class VestGun:
         self.ammo += 1
         if self.ammo < self.max_ammo and self.alive:
             signal.setitimer(signal.ITIMER_VIRTUAL, self.reload_interval)
+        elif self.alive:
+            self.reloading = False
 
     def __hit_cb(self,channel):
         # Hit detected on vest
@@ -645,6 +652,8 @@ if __name__ == '__main__':
         vest = 13
         green = 19
         red = 26
+
+        game_started = False
 
         player = Player()
 
@@ -712,6 +721,9 @@ if __name__ == '__main__':
                 
             if ui.stage == 1 and player.running.value:
                 ui.start_game(None,None)
+                game_started = True
+            elif game_started and not player.running.value:
+                ui.stage = 3
             
             ui.update_screen()
             ui.wait_frame_rate()
@@ -719,8 +731,10 @@ if __name__ == '__main__':
         print("Error")
         #terminate_server(server_ip,server_port)
         pygame.quit()
+        GPIO.cleanup()
         raise
     
     #terminate_server(server_ip,server_port)
     pygame.quit()
+    GPIO.cleanup()
 
