@@ -568,7 +568,7 @@ class VestGun:
         self.max_ammo = 12
         self.max_health = 100
         self.fire_length = 1
-        self.reload_interval = 0.1
+        self.reload_interval = 0.01
         self.hit_dmg = 10
         self.alive = False
         self.reloading = False
@@ -595,7 +595,7 @@ class VestGun:
 
     def __trigger_cb(self,channel):
         # Trigger pressed
-        if not self.reloading and not self.firing and self.alive:
+        if not self.reloading and self.ammo and not self.firing and self.alive:
             GPIO.output(self.laser, GPIO.HIGH)
             GPIO.output(self.motor, GPIO.HIGH)
             self.firing = True
