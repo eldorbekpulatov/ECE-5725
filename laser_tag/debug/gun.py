@@ -475,13 +475,7 @@ class UI:
         num_teamA = len(teamA)
         num_teamB = len(teamB)
         for mem in range(num_teamA):
-            # self.print_err = True
-            # self.err_txt = 'mem = ' + teamA[mem]["name"]
-            # self.err_time = time.time()
             if teamA[mem]["name"] == self.player.name:
-                self.print_err = True
-                self.err_txt = 'Set team A'
-                self.err_time = time.time()
                 vest_gun.set_team('A')
                 return
 
@@ -578,8 +572,8 @@ class VestGun:
             GPIO.output(self.green, GPIO.LOW)
             GPIO.output(self.red, GPIO.HIGH)
         else:
-            GPIO.output(self.green, GPIO.LOW)
-            GPIO.output(self.red, GPIO.LOW)            
+            GPIO.output(self.green, GPIO.HIGH)
+            GPIO.output(self.red, GPIO.HIGH)            
 
     def __trigger_cb(self,channel):
         # Trigger pressed
