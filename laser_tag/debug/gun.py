@@ -475,12 +475,21 @@ class UI:
         num_teamA = len(teamA)
         num_teamB = len(teamB)
         for mem in range(num_teamA):
+            self.print_err = True
+            self.err_txt = 'mem = '
+            self.err_time = time.time() + teamA[mem]["name"]
             if teamA[mem]["name"] == self.player.name:
+                # self.print_err = True
+                # self.err_txt = 'Set team A'
+                # self.err_time = time.time()
                 vest_gun.set_team('A')
                 return
 
         for mem in range(num_teamB):
             if teamB[mem]["name"] == self.player.name:
+                # self.print_err = True
+                # self.err_txt = 'Set team B'
+                # self.err_time = time.time()
                 vest_gun.set_team('B')
                 return
                 
@@ -561,6 +570,7 @@ class VestGun:
         self.red = red
 
     def set_team(self,team):
+
         if team == 'A':
             GPIO.output(self.green, GPIO.HIGH)
             GPIO.output(self.red, GPIO.LOW)
@@ -578,6 +588,8 @@ class VestGun:
             GPIO.output(self.motor, GPIO.HIGH)
             self.firing = True
             self.ammo -= 1
+            pygame.mixer.music.load("shot.mp3")
+            pygame.mixer.music.play()
             signal.setitimer(signal.ITIMER_REAL, self.fire_length)
 
     def __laser_off_cb(self,signum,frame):
@@ -591,6 +603,8 @@ class VestGun:
         # Reloading button pressed
         if not self.reloading and not self.firing and self.ammo < self.max_ammo and self.alive:
             self.reloading = True
+            pygame.mixer.music.load("reload.mp3")
+            pygame.mixer.music.play()
             signal.setitimer(signal.ITIMER_VIRTUAL, self.reload_interval)
 
     def __add_ammo_cb(self,signum,frame):
@@ -599,6 +613,8 @@ class VestGun:
         self.ammo += 1
         if self.ammo < self.max_ammo and self.alive:
             signal.setitimer(signal.ITIMER_VIRTUAL, self.reload_interval)
+            pygame.mixer.music.load("reload.mp3")
+            pygame.mixer.music.play()
         elif self.alive:
             self.reloading = False
 
