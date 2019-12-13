@@ -42,11 +42,11 @@ def listener(player):
         if data["msg"] == "start":
             player.running.value = 1
             print("game started on port ", player.sid)
-            os.kill(os.getpid(), signal.SIGUSR1)
+            #os.kill(os.getpid(), signal.SIGUSR1)
         elif data["msg"] == "stop":
             player.running.value = 0
             print("game terminated on port ", player.sid)
-            os.kill(os.getpid(), signal.SIGUSR2)
+            #os.kill(os.getpid(), signal.SIGUSR2)
             break  # exits the loop
     soc.close() 
     print("closed port ", player.sid)
@@ -75,17 +75,15 @@ class Player:
         
     def joinRoom(self):
         try:
-            print("In joinRoom")
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect((SERVER_IP, self.pid))
-            print("joinRoom connected")
             s.send(str({"ip": self.ip, "name" : self.name, "isAlive": self.isAlive}).encode())
-            print("joinRoom sent")
             self.sid = int(s.recv(BUFFER_SIZE).decode("UTF-8"))
             s.close()
             print("joined the game", self.pid)
         except:
             print("Could NOT establish a Handshake.")
+            raise
     
     def notifyDeath(self):
         try:
@@ -200,6 +198,10 @@ class UI:
     # End score center
     score_x = result_x
     score_y = height/2 + 50
+    
+    # Error printing center
+    err_x = width/2
+    err_y = height - 30
 
     # Button colors for num pad
     num_pad_colors = [BLUE] * 10
@@ -320,7 +322,11 @@ class UI:
         teamB_title_surf = self.font.render("Team B", True, self.WHITE)
         teamB_title_rect = teamB_title_surf.get_rect(topleft =(self.teamB_x, self.teamB_y))
         self.screen.blit(teamB_title_surf,teamB_title_rect)
-
+        
+        teams = self.player.get_teams()
+        teamA = teams["assignedA"]
+        teamB = teams["assignedB"]
+        num_teamA, num_teamB = len(teamA), len(teamB)
         alive_teamA,alive_teamB = self.__get_alive()
 
         # Team sizes
@@ -337,7 +343,7 @@ class UI:
                 mem_color = self.BLUE
             else:
                 mem_color = self.BLACK
-            teamA_mem_surf = self.font.render(teamA[memA], True, mem_color)
+            teamA_mem_surf = self.font.render(teamA[memA]["name"], True, mem_color)
             teamA_mem_rect = teamA_mem_surf.get_rect(topleft =(self.teamA_x, self.teamA_y + (1+memA)*self.team_list_space))
             self.screen.blit(teamA_mem_surf,teamA_mem_rect)
         for memB in range(num_teamB):
@@ -345,7 +351,7 @@ class UI:
                 mem_color = self.BLUE
             else:
                 mem_color = self.BLACK
-            teamB_mem_surf = self.font.render(teamB[memB], True, mem_color)
+            teamB_mem_surf = self.font.render(teamB[memB]["name"], True, mem_color)
             teamB_mem_rect = teamB_mem_surf.get_rect(topleft =(self.teamB_x, self.teamB_y + (1+memB)*self.team_list_space))
             self.screen.blit(teamB_mem_surf,teamB_mem_rect)
 
@@ -386,8 +392,8 @@ class UI:
         health_title_rect = health_title_surf.get_rect(center=(self.health_x, self.health_y))
         self.screen.blit(health_title_surf,health_title_rect)
         ammo_title_surf = self.font.render("Ammo", True, self.WHITE)
-        teamB_title_rect = teamB_title_surf.get_rect(center=(self.ammo_x, self.ammo_y))
-        self.screen.blit(teamB_title_surf,teamB_title_rect)
+        ammo_title_rect = ammo_title_surf.get_rect(center=(self.ammo_x, self.ammo_y))
+        self.screen.blit(ammo_title_surf,ammo_title_rect)
 
         # Health
         if self.vest_gun.health == 0:
@@ -435,7 +441,7 @@ class UI:
         self.screen.blit(result_txt_surf,result_txt_rect)
 
         # Score
-        alive_teamA,alive_teamB = self.__get_alive()
+        alive_teamA,alive_teamB = self.__get_alive(num_teamA, num_teamB)
         score_surf = self.font.render(str(alive_teamA) + ":" + str(alive_teamB), True, self.WHITE)
         score_rect = score_surf.get_rect(center=(self.score_x, self.score_y))
         self.screen.blit(score_surf,score_rect)
@@ -455,8 +461,7 @@ class UI:
         teams = self.player.get_teams()
         teamA = teams["assignedA"]
         teamB = teams["assignedB"]
-        num_teamA = len(teamA)
-        num_teamB = len(teamB)
+        num_teamA, num_teamB = len(teamA), len(teamB)
         alive_teamA = 0
         alive_teamB = 0
         for mem in range(num_teamA):
@@ -490,6 +495,7 @@ class UI:
         elif self.stage == 3:
             # Game over stage
             self.__draw_end_game()
+        self.__draw_error_running()
         pygame.display.flip()
 
     def start_game(self, signum, frame):
@@ -512,6 +518,8 @@ class UI:
             if teamB[mem]["name"] == self.player.name:
                 vest_gun.set_team('B')
                 return
+                
+        vest_gun.alive = True
     
     def end_game(self, signum, frame):
         # Game ended signal handler
@@ -526,7 +534,7 @@ class UI:
     
 class VestGun:
 
-    def __init__(self,player,laser,trigger,reload,motor,vest,green,red):
+    def __init__(self,player,laser,trigger,reload_pin,motor,vest,green,red):
 
         GPIO.setmode(GPIO.BCM)
 
@@ -540,8 +548,8 @@ class VestGun:
         # signal.signal(signal.SIGIALRM, self.__add_ammo_cb)
 
         # Reload
-        GPIO.setup(reload, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.add_event_detect(reload, GPIO.FALLING, callback=self.__reload_cb, bouncetime=200)
+        GPIO.setup(reload_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.add_event_detect(reload_pin, GPIO.FALLING, callback=self.__reload_cb, bouncetime=200)
         signal.signal(signal.SIGVTALRM, self.__add_ammo_cb)
 
         # Vibration motor
@@ -559,7 +567,7 @@ class VestGun:
         self.health = 100
         self.max_ammo = 12
         self.max_health = 100
-        self.fire_length = 0.25
+        self.fire_length = 1
         self.reload_interval = 0.1
         self.hit_dmg = 10
         self.alive = False
@@ -568,7 +576,7 @@ class VestGun:
         self.player = player
         self.laser = laser
         self.trigger = trigger
-        self.reload = reload
+        self.reload_pin = reload_pin
         self.vest = vest
         self.green = green
         self.red = red
@@ -625,27 +633,27 @@ if __name__ == '__main__':
     try:
 
         running = True
-
-        laser = 21
-        trigger = 16
-        reload = 12
-        motor = 20
+        
+        laser = 16
+        motor = 12
+        trigger = 20
+        reload_pin = 21
         vest = 13
         green = 19
         red = 26
 
         player = Player()
 
-        vest_gun = VestGun(player,laser,trigger,reload,motor,vest,green,red)
+        vest_gun = VestGun(player,laser,trigger,reload_pin,motor,vest,green,red)
 
         ui = UI(player, vest_gun)
         ui.update_screen()
 
         # Signal handler for game starting
-        signal.signal(signal.SIGUSR1, ui.start_game)
+        #signal.signal(signal.SIGUSR1, ui.start_game)
 
         # Signal handler for game ending
-        signal.signal(signal.SIGUSR2, ui.end_game)
+        # signal.signal(signal.SIGUSR2, ui.end_game)
 
         while running:
 
@@ -696,6 +704,10 @@ if __name__ == '__main__':
                         # elif ui.stage == 3:
                         #     # Game over
                         #     pass
+                        
+                
+            if ui.stage == 1 and player.running.value:
+                ui.start_game(None,None)
             
             ui.update_screen()
             ui.wait_frame_rate()
