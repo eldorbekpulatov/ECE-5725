@@ -50,10 +50,10 @@ def trigger_callback(channel):
 
 def sensor_callback(channel):
     if GPIO.input(TriggerPin):
-        print("light detected")
         GPIO.output(RedPin, GPIO.HIGH)
         GPIO.output(GreenPin, GPIO.LOW)
     else:
+        print("light detected")
         GPIO.output(RedPin, GPIO.LOW)
         GPIO.output(GreenPin, GPIO.HIGH)
     
