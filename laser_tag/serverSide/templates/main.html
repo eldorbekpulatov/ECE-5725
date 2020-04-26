@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en">
+    <head>
+		<title>Laser Tag Report</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+		
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.17.1/build/styles/default.min.css">
+		<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.17.1/build/highlight.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/highlightjs@9.16.2/highlight.pack.min.js"></script>
+		
+		<style>
+		body {
+		margin: 0;
+		font-size: 28px;
+		position: relative; 
+		font-family: Arial, Helvetica, sans-serif;
+		}
+		</style>
+
+	</head>
+	
+	<body data-spy="scroll" data-target=".navbar" data-offset="50"></body>
+		
+		<nav class="navbar navbar-expand-sm bg-dark navbar-dark fixed-top">  	
+		<ul class="navbar-nav">
+			<li class="nav-item">
+				<a class="nav-link" href="#section1">Objective</a>
+			</li>
+			<li class="nav-item">
+				<a class="nav-link" href="#section2">Introduction</a>
+			</li>
+			<li class="nav-item dropdown">
+				<a class="nav-link dropdown-toggle" href="#" id="navbardrop" data-toggle="dropdown">Design and Testing</a>
+				<div class="dropdown-menu">
+					<a class="dropdown-item" href="#section31">TCP Communication</a>
+					<a class="dropdown-item" href="#section32">Game Design</a>
+					<a class="dropdown-item" href="#section33">Gun Design</a>
+					<a class="dropdown-item" href="#section34">Electrnics</a>
+					<a class="dropdown-item" href="#section35">Vests</a>
+				</div>
+			</li>
+
+
+			<li class="nav-item dropdown">
+					<a class="nav-link dropdown-toggle" href="#" id="navbardrop" data-toggle="dropdown">Extras</a>
+					<div class="dropdown-menu">
+						<a class="dropdown-item" href="#section41">Parts List</a>
+						<a class="dropdown-item" href="#section42">Credits</a>
+						<a class="dropdown-item" href="#section43">References</a>
+					</div>
+			</li>
+
+			<li class="nav-item">
+					<a class="nav-link" href="#section5">Results and Conclusion</a>
+			</li>
+
+		</ul>
+		</nav>
+		
+
+		<!-- MAIN PAGE -->
+		<div class="container-fluid" style="margin-top:40px;padding-bottom:70px; min-height:600px; background-image: url('../static/welcome.png');">
+			<form action="/game" method="get" style="height: 100%; " class="text-center">
+            	<button type="submit" class="btn btn-success btn-lg" style="margin: 250px;">create a game</button>
+        	</form>    
+		</div>
+
+         
+
+		<!-- OBJECTIVE -->
+		<div id="section1" class="container-fluid" style="padding-top:30px;padding-bottom:70px;">
+			<h1 style="margin-top: 160px; color:cornflowerblue; font-weight:900;" >Objective</h1>
+			<div style=" width:50%; background-color: #ffffff;">
+				<p style ="font-size: large; color:orange; font-weight:900;">We set out to create a laser tag game capable of supporting numerous players. Using a centralized server for game management and client-side processing on Raspberry Pis embedded in the guns, we have created a simple to use, enjoyable version of this classic game.</p>
+			</div>
+		</div>
+
+		<!-- INTRODUCTION (VIDEO) -->
+		<div id="section2" class="container-fluid bg-warning" style="padding-top:120px;padding-bottom:70px">
+			<div class="row">
+				<iframe style="padding-left: 40px" width="50%" height="360px" src="https://www.youtube.com/embed/i6H5DVZzD8U" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+				<div style=" width:50%; align-content: right;padding-left: 35px;">
+					<h1>Introduction</h1>
+					<p style ="font-size: large; font-weight:900; ">In this project, we programmed and constructed a laser tag game. While we only physically constructed two vest/gun sets due to time and budget constraints, the software can accommodate much larger games. The gun consists of a 3D-printed shell containing a Raspberry Pi 3B+ for processing, a PiTFT for user interfacing, and various peripheral components that make it look, feel, and sound like the player is using a weapon from science fiction. The vest senses received shots using simple photodiodes and communicates hits to the Pi. Each player’s system communicates with the central server, which is responsible for administering the game as a whole. Overall, the system works well, and is a lot of fun to play.</p>
+				</div>
+			</div>
+			
+		</div>
+
+		<!-- DESIGN (CODE) -->
+		<div id="section31" class="container-fluid bg-secondary" style="padding-top:70px;padding-bottom:70px">
+			<h1>TCP Communication</h1>
+			
+			<p style ="font-size: large;  padding-right: 35px; padding-left: 35px; font-weight:900;">We started out by designing the server that would facilitate communication between players and control the game from a centralized server. The code blocks below model the client-server communication protocol used to simulate the game. Left side runs on the centralized server, while the right side is running on each RasbperryPi.</p>
+			<div class="row">
+				<pre style="width: 50%;">
+					<code class="python" style="max-height: 300px; font-size: xx-small;">
+class Game:
+	def __init__(self, pub_id):
+		# Shared Structures
+		self.pid = pub_id
+		self.ip = socket.gethostname()
+		self.sid = random.randint(1000, 6553)
+		self.proc = None
+
+		# Thread Variables
+		self.manager = Manager()
+		self.unassigned = self.manager.dict()
+		self.assignedA = self.manager.dict()
+		self.assignedB = self.manager.dict()
+		self.running = Value("i", 0)
+	
+	def startListening(self):
+		while not self.proc:
+			self.proc = Process(target=listener, args=(self,))
+		self.proc.start()
+
+	def stopListening(self):
+		while self.proc.is_alive():
+			self.proc.terminate()
+		self.proc = None
+
+	def isListening(self):
+		if not self.running.value and self.proc:
+			return self.proc.is_alive()
+		return False
+
+	def startPlaying(self):
+		while not self.proc:
+			self.proc = Process(target=manager, args=(self,))
+		self.proc.start()
+		
+	def stopPlaying(self):
+		while self.proc.is_alive():
+			self.proc.terminate()
+		self.proc = None
+
+	def isPlaying(self):
+		if self.running.value and self.proc:
+			return self.proc.is_alive()
+		return False
+
+	def notifyTeams(self, messege):
+		d = self.get_teams()
+		d["msg"] = messege
+		# pool = Pool(processes=4)
+		for team in [self.assignedA, self.assignedB]:
+			for k,v in team.items():
+				pool.apply(sendMsg, args=(v["ip"], self.sid, d,))
+		pool.close()
+		pool.join()
+
+	def notifyExtras(self, messege):
+		d = self.get_teams()
+		d["msg"] = messege
+		pool = Pool(processes=4)
+		for k,v in self.unassigned.items():
+			pool.apply(sendMsg, args=(v["ip"], self.sid, d,))
+		pool.close()
+		pool.join()
+	
+	def notifyAll(self, messege):
+		d = self.get_teams()
+		d["msg"] = messege
+		pool = Pool(processes=4)
+		for team in [self.assignedA, self.assignedB, self.unassigned]:
+			for k,v in team.items():
+				pool.apply(sendMsg, args=(v["ip"], self.sid, d,))
+		pool.close()
+		pool.join()
+
+	def getTeamCounts(self):
+		pool = Pool(processes=4)
+		teams = [self.assignedA, self.assignedB]
+		counts = pool.map(counter, teams)
+		pool.close()
+		pool.join()
+		return counts
+
+	def whoWon(self):
+		counts = self.getTeamCounts()
+		if counts[0] > counts[1]: return 1
+		elif counts[1] > counts[0]: return 2
+		else: return 0
+
+
+	def override_teams(self, data):
+		pool = Pool(processes=3)
+		pool.apply(overrideDict, args=(self.assignedA, data["assignedA"],))
+		pool.apply(overrideDict, args=(self.assignedB, data["assignedB"],))
+		pool.apply(overrideDict, args=(self.unassigned, data["unassigned"],))
+		pool.close()
+		pool.join()
+		
+	def get_teams(self):
+		return {"unassigned" : self.unassigned.values(), 
+				"assignedA" : self.assignedA.values(), 
+				"assignedB" : self.assignedB.values()}	
+				
+				def counter(sharedStruct):
+				count = 0
+				for k,v in sharedStruct.items():
+					if v["isAlive"]: count+=1
+				return count
+
+############### HELPER FUNCTIONS ########################
+# used to help up parallize some of the redundant tasks
+#########################################################
+
+def overrideDict(sharedStruct, newStruct):
+	old_keys = sharedStruct.keys()
+	used_keys = []
+	for each in newStruct:
+		used_keys.append(each[KEY])
+		sharedStruct[each[KEY]] = each
+	for old_k in old_keys:
+		if old_k not in used_keys:
+			del sharedStruct[old_k]
+
+
+def sendMsg(player_ip, player_port, data):
+	try:
+		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		s.connect((player_ip, player_port))
+		s.send(str(data).encode())
+		s.recv(BUFFER_SIZE)
+		s.close()
+	except Exception as e:
+		print("Could NOT send MSG to", player_ip)
+		print(e)
+
+
+def listener(game): 
+	soc = socket.socket()   
+	soc.bind(("", game.pid)) 
+	soc.listen(1) 
+	while True: 
+		# establish connection with client 
+		conn, addr = soc.accept() 
+		# data received from client 
+		data = eval(conn.recv(BUFFER_SIZE).decode("UTF-8"))
+		# update shared structure
+		game.unassigned[data[KEY]]=data
+		# send recipt & close
+		conn.send(str(game.sid).encode()) 
+		conn.close()
+	soc.close() 
+	
+		
+def manager(game): 
+	soc = socket.socket()   
+	soc.bind(("", game.sid)) 
+	soc.listen(1) 
+	while True: 
+		# establish connection with client 
+		conn, addr = soc.accept() 
+		# data received from client 
+		data = eval(conn.recv(BUFFER_SIZE).decode("UTF-8"))
+		
+
+		# update shared structure
+		if data[KEY] in game.assignedA.keys():
+			game.assignedA[data[KEY]] = data
+		elif data[KEY] in game.assignedB.keys():
+			game.assignedB[data[KEY]] = data
+		else:
+			game.unassigned[data[KEY]] = data
+
+		counts = game.getTeamCounts()
+		if 0 in counts:
+			game.notifyTeams("stop")
+		else:
+			game.notifyTeams("update")
+		
+		# send recipt & close // FIXME
+		conn.send("successfully updated".encode())
+		conn.close()
+	soc.close() 
+					</code>
+				</pre>
+				<pre style="width: 50%;">
+					<code class="python" style="max-height: 300px; font-size: xx-small;">
+class Player:
+	def __init__(self, pub_id):
+		self.pid = pub_id
+		self.name = socket.gethostname()
+		try:
+			self.ip = subprocess.check_output(["hostname", "-I"])[:-2]
+		except:
+			self.ip = subprocess.check_output(["hostname"])[:-2]
+		self.manager = Manager()
+		self.unassigned = self.manager.dict()
+		self.assignedA = self.manager.dict()
+		self.assignedB = self.manager.dict()
+		self.running = Value("i", 0)
+		self.isAlive = 1
+		self.team = None
+		self.sid = None
+		self.proc = None
+		
+	def joinRoom(self):
+		try:
+			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			s.connect((SERVER_IP, self.pid))
+			s.send(str({"ip": self.ip, "name" : self.name, "isAlive": self.isAlive}).encode())
+			self.sid = int(s.recv(BUFFER_SIZE).decode("UTF-8"))
+			s.close()
+			print("joined the game", self.pid)
+		except:
+			print("Could NOT establish a Handshake.")
+	
+	def notifyDeath(self):
+		try:
+			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			s.connect((SERVER_IP, self.sid))
+			s.send(str({"ip": self.ip, "name" :self.name, "isAlive": self.isAlive}).encode())
+			s.recv(BUFFER_SIZE)
+			s.close()
+		except:
+			print("Could NOT send a death note")
+
+	def startListening(self):
+		while not self.proc:
+			self.proc = Process(target=listener, args=(self,))
+		self.proc.start()
+
+	def stopListening(self):
+		while self.proc.is_alive():
+			self.proc.terminate()
+		self.proc = None
+
+	def override_teams(self, data):
+		pool = Pool(processes=3)
+		pool.apply(overrideDict, args=(self.assignedA, data["assignedA"],))
+		pool.apply(overrideDict, args=(self.assignedB, data["assignedB"],))
+		pool.apply(overrideDict, args=(self.unassigned, data["unassigned"],))
+
+	def get_teams(self):
+		return {"unassigned" : self.unassigned.values(), 
+				"assignedA" : self.assignedA.values(), 
+				"assignedB" : self.assignedB.values()}
+
+				def overrideDict(sharedStruct, newStruct):
+				old_keys = sharedStruct.keys()
+				used_keys = []
+				for each in newStruct:
+					used_keys.append(each[KEY])
+					sharedStruct[each[KEY]] = each
+				for old_k in old_keys:
+					if old_k not in used_keys:
+						del sharedStruct[old_k]
+
+############### HELPER FUNCTIONS ########################
+# used to help up parallize some of the redundant tasks
+#########################################################
+
+def listener(player): 
+	soc = socket.socket()   
+	soc.bind(("", player.sid))
+	soc.listen(1) 
+	print("listening to port ", player.sid)
+	while True: 
+		# establish connection with client 
+		conn, addr = soc.accept() 
+		# data received from client 
+		data = eval(conn.recv(BUFFER_SIZE).decode("UTF-8"))
+		# update teams in parallel
+		player.override_teams(data)
+		print(data)
+		# send recipt 
+		conn.send("successfully updated") 
+		# close the connection
+		conn.close()
+		# update the state of the game
+		# update the state of the game
+		if data["msg"] == "start":
+			player.running.value = 1
+			print("game started on port ", player.sid)
+		elif data["msg"] == "stop":
+			player.running.value = 0
+			print("game terminated on port ", player.sid)
+			break  # exits the loop
+	soc.close() 
+	print("closed port ", player.sid)
+					</code>
+				</pre>
+			</div>
+			<!-- syntax highlighting -->
+			<script>hljs.initHighlightingOnLoad();</script>
+		</div>
+
+		<!-- DESIGN (PYGAME) -->
+		<div id="section32" class="container-fluid bg-danger" style="padding-top:70px;padding-bottom:70px">
+			<h1>Game Design</h1>
+			<div class="row" >
+				<div style="width:50%;" class="text-center text-lg-left col-lg-6 col-md-6 col-6">
+					<p style ="font-size: large; font-weight:900; padding-left: 40px;">We then experimented with electronics for the gun. We tried out LED panels and 7-segment displays, but we eventually decided that we could change our original idea of having the Raspberry Pi mounted on the vest to instead embedding it in the gun and using the PiTFT with the pygame library for all displays. Once we decided on that, we began designing the gameplay itself.</p>
+					<p style ="font-size: large;  font-weight:900; padding-left: 40px;">The displays are split into four stages based on the game state: joining the server, waiting for the game to start, game play, and game over. The first consists of a number pad that allows the player to enter the four-digit port number for the server to join the game. The second was initially a screen that allowed the user to pick their team, but we decided to move that functionality to the server, so it became a simple waiting screen. The third is displayed during actual gameplay. On the left, it displays lists of the two teams and how many are still alive. On the right, it displays the player’s remaining health out of 100 and their ammunition out of 12. Each of the health and ammo change to yellow when below half their maximum value and red when below a quarter to warn the user that they are getting low. Once the player dies, the gun is disabled, but they can still view the teams to watch the remaining players on each team. Once all players on one team are killed or the game is stopped from the server, the end-game screen is displayed. The background color corresponds to the winning team, and text appears indicating whether the player’s team won, lost, or tied. The final score, corresponding to the number of players still active on each team, is also displayed.</p>
+				</div>
+		
+
+				<div style="width:50%" class="row text-center text-lg-left col-lg-6 col-md-6 col-6">
+					<div class="col-lg-12 col-md-12 col-12">
+						<a href="#" class="d-block mb-4 h-100">
+							<img class="img-fluid img-thumbnail" width=480px src="./static/join.png" >
+							</a>
+					</div>
+					<div class="col-lg-12 col-md-12 col-12">
+						<a href="#" class="d-block mb-4 h-100">
+							<img class="img-fluid img-thumbnail" width=480px  src="./static/wait.png">
+							</a>
+					</div>
+				</div>
+
+				<div style="width:100%; padding-left:50px;" class="row text-center text-lg-left col-lg-12 col-md-12 col-12" >
+					<div class="col-lg-6 col-md-6 col-6">
+						<a href="#" class="d-block mb-4 h-100">
+							<img class="img-fluid img-thumbnail" width=480px  src="./static/end.png" alt="">
+							</a>
+					</div>
+					<div class="col-lg-6 col-md-6 col-6">
+						<a href="#" class="d-block mb-4 h-100">
+							<img class="img-fluid img-thumbnail" width=480px  src="./static/game.png" alt="">
+							</a>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- DESIGN (CAD) -->
+		<div id="section33" class="container-fluid bg-info" style="padding-top:70px;padding-bottom:70px">
+			<h1>Gun Design</h1>
+			<div class="row" style="padding-left: 40px;">
+				<script src="https://embed.github.com/view/3d/eldorbekpulatov/ECE-5725-Labs/master/laser_tag/stlFiles/Gun.STL"></script>
+				<p style ="font-size: large; font-weight:900; padding-left: 40px; padding-right: 40px; width: 40%;">With the general game flow programmed, we modeled and 3D printed the gun itself. We broke it up into four sections for ease of printing. The front section houses the laser, power and reload buttons, vibration motor, and power distribution board. The center houses the Raspberry Pi, TFT screen, USB port, and speaker. The rear houses the connector for the cable from the vest, and connects the handle to the gun. Finally, the handle houses the trigger. We separated each of the four parts in half for printing and ease of electronics assembly. We initially designed a vertically-overlapping joint for attaching the two halves after assembly, but realized this wouldn’t print well without support, so we switched to a horizontally-overlapping joint instead.</p>
+			</div>
+		</div>
+
+		<!-- DESIGN (ELECTRONICS) -->
+		<div id="section34" class="container-fluid bg-warning" style="padding-top:70px;padding-bottom:70px">
+			<h1>Electronics</h1>
+			<div class="row" >
+				<p style ="font-size: large; font-weight:900; padding-left: 40px; padding-right: 50px; width: 40%;">Game play on the client side is fairly straightforward. It consists of GPIO interrupts that read input from the vest sensors, trigger, and reload button and act accordingly. The vest sensors’ interrupt handler decrements health; the trigger’s turns on the laser, plays a “gun firing” sound, spins the vibration motor, and sets a timer to turn off the laser and motor after a short time to prevent the user from simply holding down the trigger indefinitely; and the reload button starts the reload sequence where a single shot is added and a “reload” sound is played on short timer interrupts, so that the reload actually takes time. Once the player’s health reaches zero, the code notifies the server of his or her death and turns off firing and reloading until the end of the game.</p>
+				<iframe style="margin-left: 140px" width="360" height="480" src="https://www.youtube.com/embed/X1cirzYz4HQ" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+			</div>
+		</div>
+
+		<!-- DESIGN (VEST) -->
+		<div id="section35" class="container-fluid bg-primary" style="padding-top:70px;padding-bottom:70px">
+			<h1>Vests</h1>
+			<div class="row">
+				<p style ="font-size: large; font-weight:900; padding-left: 40px; padding-right: 50px; width: 40%;">Next, we constructed the vests. They consist of two protoboards: one housing a 5x5 array of phototransistors and a Schmitt Trigger circuit for digitizing their output, and the other housing two pairs of red and green LEDs for team indication. The Schmitt Trigger threshold is around 2.5V and the circuit is inverting, so the output is low (around 0.8V) when sensing laser light and high (around 4.7V) otherwise. All of the photodiodes are wired in parallel since we don’t care where the light is sensed on the vest to record a hit. The vest is wired to the gun using a cable we constructed. Once the gun parts were printed, we constructed the guns and connected them to the vests, giving us our final products.</p>
+				<div class="col-lg-6 col-md-6 col-6">
+					<a href="#" class="d-block mb-4 h-100">
+						<img class="img-fluid img-thumbnail" src="./static/vest.png" >
+						</a>
+				</div>
+			</div>
+		</div>
+
+		<!-- EXTRAS (PARTS) -->
+		<div id="section41" class="container-fluid bg-info" style="padding-top:70px;padding-bottom:70px">
+			<h1>Parts List</h1>
+			<p style ="font-size: small; padding-left: 40px">Raspberry Pi 3B+ x2 - extra included in budget for $35</p>
+			<p style ="font-size: small; padding-left: 40px">PiTFT x2 - extra included in budget for $34.95</p>
+			<p style ="font-size: small; padding-left: 40px">Acrylic Diffuser Sheet x0.25 - $3.37</p>
+			<p style ="font-size: small; padding-left: 40px">Laser Diode x2 - $11.90</p>
+			<p style ="font-size: small; padding-left: 40px">630nm Phototransistor x50 - $13.02</p>
+			<p style ="font-size: small; padding-left: 40px">3D Printed Parts - Free</p>
+			<p style ="font-size: small; padding-left: 40px">Pushbuttons, resistors, red and green LEDs, LM358 Op Amps, screws, protoboards - lab surplus</p>
+			<p><b>Total Cost: $98.24</b></p>
+			
+		</div>
+	
+		<!-- EXTRAS (CONTRIBUTIONS) -->
+		<div id="section42" class="container-fluid bg-warning" style="padding-top:70px;padding-bottom:70px">
+			<h1>Credits</h1>
+			<div class="row" >
+
+				<p class="col-lg-6 col-md-6 col-6"><b>Eldor</b> - Coded server, coded TCP connection on both server (PC) and client (Raspberry Pi), designed and built power distribution board in guns, CADed rear and handle sections of guns, constructed guns, and constructed LED and harness portions of vests.</p>
+				<p class="col-lg-6 col-md-6 col-6"><b>Alec</b> - Tested initial peripherals and displays, coded pygame UI, coded Raspberry Pi gameplay, CADed front and middle sections of guns, and designed and built sensor portion of vests.</p>
+				<p class="col-lg-12 col-md-12 col-12" style="font-size: large; font-weight:600;">Special thanks to Jacob Wyrick for helping with the development of some of the CAD models.</p>
+
+			</div>
+		</div>
+	
+		<!-- EXTRAS (REFERENCES) -->
+		<div id="section43" class="container-fluid bg-primary" style="padding-top:70px;padding-bottom:70px">
+			<h1>References</h1>
+			<div class="row">
+				<p><a style="text-decoration:none; padding-left: 40px; color: white;" href="https://github.com/eldorbekpulatov/ECE-5725-Labs/tree/master/laser_tag">CodeRepo</a></p>
+				<p><a style="text-decoration:none; padding-left: 40px; color: white;" href="https://media.digikey.com/pdf/Data%20Sheets/Everlight%20PDFs/ALS-PT204-6C,L177.pdf">Photodiode</a></p>
+				<p><a style="text-decoration:none; padding-left: 40px; color: white;" href="https://howtomechatronics.com/how-it-works/electrical-engineering/schmitt-trigger/">Schmitt Trigger</a></p>
+				<p><a style="text-decoration:none; padding-left: 40px; color: white;" href="https://docs.python.org/3.4/library/multiprocessing.html">Multiprocessing</a></p>
+				<p><a style="text-decoration:none; padding-left: 40px; color: white;" href="https://flask.palletsprojects.com/en/1.0.x/patterns/jquery/">AJAX</a></p>
+				<p><a style="text-decoration:none; padding-left: 40px; color: white;" href="https://wiki.python.org/moin/TcpCommunication">TCP/IP</a></p>
+				<p><a style="text-decoration:none; padding-left: 40px; color: white;" href="https://www.pygame.org/docs/">PyGame</a></p>				
+			</div>
+		</div>
+
+		<div id="section5" class="container-fluid bg-danger" style="padding-top:70px;padding-bottom:70px">
+			<div class='row'>
+				<div class="col-lg-6 col-md-6 col-6">
+					<h1>Takeaways</h1>
+					<p style ="font-size: large; font-weight:900; padding-left: 40px; padding-right: 50px;">Overall, our project worked well. The user interfaces on the gun are readable and easy to use, the server communicates well with the guns and can keep track of the game as it’s played, and the photodiodes in the vest can sense the laser hits as they come in from any reasonable distance as the laser light is very bright.</p>
+					<p style ="font-size: large; font-weight:900; padding-left: 40px; padding-right: 50px;">There are still some small bugs in the execution. For one, the vest needs some fixes. Since the sensitivity of the photodiodes peaks at 630nm which is visible light, ambient light can sometimes trigger false readings. In addition, the acrylic covering the vest does not do as good a job as we would have liked at diffusing the laser light. We currently have photodiodes covering the vest at a density of around one per square inch, and it is still possible to hit the vest with a shot and for the vest to not pick it up. On the server side, there seems to be a bug in which if two people join the game too close to each other, it will either record one person’s name twice or not pick up one of the players at all. This may be because the port is occupied dealing with one player at a time and completely misses the other.</p>
+					<p style ="font-size: large; font-weight:900; padding-left: 40px; padding-right: 50px;">Even with these couple of bugs, the game is still playable and enjoyable. It would just take a little while longer to fix these issues to make it flawless.</p>	
+				</div>
+				<div class="col-lg-6 col-md-6 col-6">
+					<h1>Future Work</h1>
+					<p style ="font-size: large; font-weight:900; padding-left: 40px; padding-right: 50px;">If we had more time to work on this project, we could have added a few things to improve the game. We would experiment with different light-diffusing materials and detection hardware, since that remains the least-reliable aspect of the game now. We also could have added more features to the game such as power-ups, healing, and individual score tracking. The last one would be particularly difficult, since we would need to investigate how best to determine who fired a killing shot. One method might have been digitally encoding an ID number in flashes from the laser that could be picked up by the vest. Another could be actually tracking the positions and orientations of all of the guns during the game. It would have been an interesting problem to tackle. If we had both additional time and a larger budget, we would have liked to demonstrate the multi-user capabilities of our server beyond two players by building additional vest/gun sets as well.</p>
+				</div>
+			</div>
+		</div>
+
+
+    </body>
+</html>

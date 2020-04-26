@@ -1,0 +1,156 @@
+<html>  
+    <head>  
+        <title>LaserTag Game</title> 
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css">
+        <!-- Bootstrap core CSS -->
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+        <!-- Material Design Bootstrap -->
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.8.11/css/mdb.min.css" rel="stylesheet">
+
+        <!-- JQuery -->
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+        <!-- Bootstrap tooltips -->
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.4/umd/popper.min.js"></script>
+        <!-- Bootstrap core JavaScript -->
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+        <!-- MDB core JavaScript -->
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.8.11/js/mdb.min.js"></script>
+
+        <script src="//code.jquery.com/jquery-1.12.4.js"></script>
+        <script src="//code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+        <script src="https://d3js.org/d3.v5.min.js"></script>
+    </head>  
+    <body> 
+        <div class="container">
+            <br>
+            <div class="row">
+                <h1>Game Number: <span id=gameid>{{id}}</span></h1>
+            </div>
+            <div class="row">
+                <h5>IP Adress: <span id=gameip>{{ip}}</span></h5>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mx-auto bg-light" style="padding: 10px;">
+                    <ul id="sortable0" class="list-group connectedSortable" style="min-height: 100px; height: inherit; border-style: dashed;"></ul>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mx-auto bg-warning" style="padding: 10px;">
+                    <ul id="sortable1" class="list-group connectedSortable" style="min-height: 100px; height: inherit; border-style: dashed;"></ul>
+                </div>
+                
+                <div class="col-md-6 mx-auto bg-primary" style="padding: 10px;">
+                    <ul id="sortable2" class="list-group connectedSortable" style="min-height: 100px; height: inherit; border-style: dashed;"></ul>
+                </div>
+            </div>
+
+            <div class="row">
+                <button id="start_button" class="btn btn-success">start the game</button>
+            </div>
+            
+        </div>
+
+        <script>
+            var gameID = document.getElementById("gameid").innerHTML
+            var pollTime = 3000;  // do a poll every 2 seconds
+            var poll = setInterval( pollFunc, pollTime); // init poll interval
+            pollFunc() // do the poll
+
+            function stopPoll() { 
+                clearInterval(poll);
+            }
+            function resumePoll() {
+                poll = setInterval( pollFunc, pollTime);
+            }
+
+            function grabPlayers(){
+                unassigned = []; assignedA = []; assignedB = []
+                d3.select("#sortable0").selectAll("li").each(function(d){unassigned.push(d)})
+                d3.select("#sortable1").selectAll("li").each(function(d){assignedA.push(d)})
+                d3.select("#sortable2").selectAll("li").each(function(d){assignedB.push(d)})
+                return {"unassigned":unassigned, "assignedA":assignedA, "assignedB":assignedB}
+            }
+
+            function updateChart(dataset, id) {
+                let entries = d3.select(id).selectAll('li').data(dataset);
+                // Call .remove to eliminate them
+                entries.exit().remove();
+                // Create new elements
+                entries.enter()
+                    .append("li")
+                    .attr("class", "list-group-item font-weight-bold")
+                    .attr("id", function(d) { return d.ip;})
+                    .text(function(d) { console.log(d); return d.name;})
+                    .merge(entries);
+
+                // used to change colod based on isAlive
+                dataset.forEach(element => {
+                    if(element.isAlive){
+                        document.getElementById(element.ip).style.color = "green"
+                    }else{
+                        document.getElementById(element.ip).style.color = "red"
+                    }
+                });
+            }
+            
+                
+            function pollFunc(){
+                $.ajax({
+                    url : '/teams?port='+gameID,
+                    success: function(data) {
+                        updateChart(data.unassigned, "#sortable0");
+                        updateChart(data.assignedA, "#sortable1");
+                        updateChart(data.assignedB, "#sortable2");
+                    },
+                    error: function(error) {
+                        console.log(error);
+                        alert("Connection to Socket Lost");
+                    }
+                });
+            }
+
+            function updateFunc() { 
+                $.ajax({
+                    url : '/teams?port='+ gameID,
+                    type: 'POST',
+                    data: JSON.stringify(grabPlayers()),
+                    dataType: "json",
+                    contentType: "application/json; charset=utf-8",
+                    success: function(response) {
+                        updateChart(response.unassigned, "#sortable0");
+                        updateChart(response.assignedA, "#sortable1");
+                        updateChart(response.assignedB, "#sortable2");
+                    },
+                    error: function(error) {
+                        console.log(error);
+                        alert("Connection to Socket Lost");
+                    }
+                });
+            }
+
+            // update the server when drag happens
+            $("#sortable0, #sortable1, #sortable2").sortable({
+                connectWith: ".connectedSortable",
+                start: function(){ stopPoll() },                 // make sure not to update while modifying
+                stop: function(){ updateFunc(); resumePoll(); }, // continue to update after modifying
+            });
+
+            // redirect page to start screen
+            $("#start_button").click( function() { 
+                teams = grabPlayers()
+                if (teams.assignedA.length > 0 && teams.assignedB.length > 0){
+                    document.location.pathname = "/start/" + gameID; 
+                }else{
+                    alert("Both teams must have players to begin!")
+                }
+                
+            });
+        </script>  
+    </body>  
+</html>  
+
+  
+    
