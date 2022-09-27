@@ -1,1 +1,0 @@
-sudo perf_4.18 stat -e task-clock,context-switches,cpu-migrations,page-faults,cycles,instructions python more_video_control_cb_perf.py

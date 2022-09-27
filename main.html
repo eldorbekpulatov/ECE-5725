@@ -64,13 +64,7 @@
 		
 
 		<!-- MAIN PAGE -->
-		<div class="container-fluid" style="margin-top:40px;padding-bottom:70px; min-height:600px; background-image: url('../static/welcome.png');">
-			<form action="/game" method="get" style="height: 100%; " class="text-center">
-            	<button type="submit" class="btn btn-success btn-lg" style="margin: 250px;">create a game</button>
-        	</form>    
-		</div>
-
-         
+		<div class="container-fluid" style="margin-top:40px;padding-bottom:70px; min-height:600px; background-image: url('./static/welcome.png');"></div>
 
 		<!-- OBJECTIVE -->
 		<div id="section1" class="container-fluid" style="padding-top:30px;padding-bottom:70px;">
@@ -437,8 +431,8 @@ def listener(player):
 		<div id="section33" class="container-fluid bg-info" style="padding-top:70px;padding-bottom:70px">
 			<h1>Gun Design</h1>
 			<div class="row" style="padding-left: 40px;">
-				<script src="https://embed.github.com/view/3d/eldorbekpulatov/ECE-5725-Labs/master/laser_tag/stlFiles/Gun.STL"></script>
 				<p style ="font-size: large; font-weight:900; padding-left: 40px; padding-right: 40px; width: 40%;">With the general game flow programmed, we modeled and 3D printed the gun itself. We broke it up into four sections for ease of printing. The front section houses the laser, power and reload buttons, vibration motor, and power distribution board. The center houses the Raspberry Pi, TFT screen, USB port, and speaker. The rear houses the connector for the cable from the vest, and connects the handle to the gun. Finally, the handle houses the trigger. We separated each of the four parts in half for printing and ease of electronics assembly. We initially designed a vertically-overlapping joint for attaching the two halves after assembly, but realized this wouldn’t print well without support, so we switched to a horizontally-overlapping joint instead.</p>
+				<iframe class="render-viewer " src="https://viewscreen.githubusercontent.com/view/solid?color_mode=dark&amp;commit=4de93bc59cb1bc46dec081915dee8e564cb04a07&amp;enc_url=68747470733a2f2f7261772e67697468756275736572636f6e74656e742e636f6d2f656c646f7262656b70756c61746f762f4543452d353732352d4c6162732f346465393362633539636231626334366465633038313931356465653865353634636230346130372f6c617365725f7461672f73746c46696c65732f47756e2e53544c&amp;logged_in=true&amp;nwo=eldorbekpulatov%2FECE-5725-Labs&amp;path=laser_tag%2FstlFiles%2FGun.STL&amp;repository_id=205427833&amp;repository_type=Repository#fcd53554-0c54-4442-a9dd-a51bd38f957e" sandbox="allow-scripts allow-same-origin allow-top-navigation" title="File display" style="width:50%;" ></iframe>
 			</div>
 		</div>
 
