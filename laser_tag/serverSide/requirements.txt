@@ -14,6 +14,6 @@ mccabe==0.6.1
 pylint==1.9.5
 singledispatch==3.4.0.3
 six==1.13.0
-Werkzeug==0.16.0
+Werkzeug==2.2.3
 wrapt==1.11.2
 gunicorn==19.10.0
